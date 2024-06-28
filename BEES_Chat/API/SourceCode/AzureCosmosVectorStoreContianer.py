@@ -1,0 +1,81 @@
+import langchain_text_splitters
+from azure.cosmos import CosmosClient, PartitionKey
+from langchain_community.vectorstores.azure_cosmos_db_no_sql import (AzureCosmosDBNoSqlVectorSearch, )
+from langchain_huggingface import HuggingFaceEmbeddings
+from dotenv import load_dotenv, find_dotenv
+from SourceCode.Log import Logger
+import os
+
+logger = Logger()
+store = {}
+load_dotenv(find_dotenv())
+
+cosmos_key = os.getenv('WebChat_Key')
+cosmos_database = os.getenv('WebChat_DB')
+cosmos_collection = os.getenv('WebChatChunk_Container')
+cosmos_vector_property = "embedding"
+
+indexing_policy = {
+    "indexingMode": "consistent",
+    "includedPaths": [{"path": "/*"}],
+    "excludedPaths": [{"path": '/"_etag"/?'}],
+    "vectorIndexes": [{"path": "/embedding", "type": "quantizedFlat"}],
+}
+
+vector_embedding_policy = {
+    "vectorEmbeddings": [
+        {
+            "path": "/embedding",
+            "dataType": "float32",
+            "distanceFunction": "cosine",
+            "dimensions": 384,
+        }
+    ]
+}
+
+database_name = cosmos_database
+container_name = cosmos_collection
+partition_key = PartitionKey(path="/id")
+cosmos_container_properties = {"partition_key": partition_key}
+cosmos_database_properties = {"etag": None, "match_condition": None}
+
+openai_embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+cosmos_client = CosmosClient(os.getenv('WebChat_EndPoint'), cosmos_key)
+
+database = cosmos_client.get_database_client(database_name)
+container = database.get_container_client(container_name)
+
+
+def Load_ChunkData(Data):
+    try:
+        text_splitter = langchain_text_splitters.RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=150)
+        docs = text_splitter.split_documents(Data)
+
+        AzureCosmosDBNoSqlVectorSearch.from_documents(
+            documents=docs,
+            embedding=openai_embeddings,
+            cosmos_client=cosmos_client,
+            database_name=database_name,
+            container_name=container_name,
+            vector_embedding_policy=vector_embedding_policy,
+            indexing_policy=indexing_policy,
+            cosmos_container_properties=cosmos_container_properties,
+            cosmos_database_properties=cosmos_database_properties
+        )
+
+    except Exception as e:
+        error_details = logger.log(f"Error occurred in Loading Chunk Data: {str(e)}", "Error")
+        raise Exception(error_details)
+
+
+def delete_chunk_item(unique_id):
+    query = f"SELECT c.id FROM c WHERE c.unique_id = '{unique_id}'"
+    try:
+        query_items = container.query_items(query, enable_cross_partition_query=True)
+        items = list(query_items)
+        if items:
+            container.delete_item(item=items[0]['id'], partition_key=items[0]['id'])
+            logger.log(f"Successfully deleted Chunk Data: {unique_id}", "Info")
+    except:
+        logger.log(f"No data found for deletion: {unique_id}", "Error")
+

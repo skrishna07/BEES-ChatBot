@@ -1,0 +1,2 @@
+[Error] [2024-06-28 11:48:11.609035] Error occurred in fetching response:'list' object has no attribute 'metadata'
+[Error] C:\Users\BRADSOL\Documents\GitHub\GenAI - Git\BEES-ChatBot\BEES_Chat\API\SourceCode\BEES_QA.py:LineNo-142,Details - AttributeError: 'list' object has no attribute 'metadata'
