@@ -1,9 +1,12 @@
+import collections
+import re
+
 import langchain.chains.combine_documents
 import langchain.chains.history_aware_retriever
 import langchain.chains.retrieval
 import langchain_community.callbacks
 from azure.cosmos import CosmosClient, PartitionKey
-from langchain_community.vectorstores.azure_cosmos_db_no_sql import (AzureCosmosDBNoSqlVectorSearch, )
+from .azure_no_sql import (AzureCosmosDBNoSqlVectorSearch, )
 from langchain_huggingface import HuggingFaceEmbeddings
 from dotenv import load_dotenv, find_dotenv
 import os
@@ -81,13 +84,12 @@ qa_retriever = vectorstore.as_retriever(
 )
 
 ### Contextualize question ###
-contextualize_q_system_prompt = (
-    "Given a chat history and the latest user question "
-    "which might reference context in the chat history, "
-    "formulate a standalone question which can be understood "
-    "without the chat history. Do NOT answer the question, "
-    "just reformulate it if needed and otherwise return it as is."
-)
+contextualize_q_system_prompt = ("""Given a chat history and the latest user question, 
+reformulate it into a standalone question that can be understood without the context of the chat.
+Don't answer the question itself. If the question already makes sense independently, return it as is.
+If reformulation is necessary, use concise language and limit the response to three sentences maximum. 
+When unsure, state that you don't know."""
+                                 )
 contextualize_q_prompt = ChatPromptTemplate.from_messages(
     [
         ("system", contextualize_q_system_prompt),
@@ -98,19 +100,31 @@ contextualize_q_prompt = ChatPromptTemplate.from_messages(
 llm = AzureChatOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
     azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
-    openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"), temperature=0
+    openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"), temperature=0, max_tokens=2000
 )
 history_aware_retriever = langchain.chains.history_aware_retriever.create_history_aware_retriever(
     llm, qa_retriever, contextualize_q_prompt)
 
 ### Answer question ###
-system_prompt = ("""You are an assistant for question-answering tasks.
-        Based on the information provided, please provide a concise answer without adding any additional content or details. 
-        Use the following pieces of retrieved context to answer the question. 
-        If you don't know the answer, say that you don't know. 
-        Use three sentences maximum and keep the answer concise. 
-        Note: Don't provide the answer from external content other than given context.
-        \n\n{context}""")
+system_prompt = ("""
+You are a highly knowledgeable and concise assistant specializing in question-answering tasks. Please follow these guidelines:
+ 
+1. Answer only with relevant information derived from the provided context.
+2. Provide precise and concise answers strictly within the context.
+3. Indicate your confidence in the answer using a scale of 1 (low) to 5 (high).
+4. Ensure your answers are grammatically correct and complete sentences.
+5. If the context does not contain the answer, state "The answer is not found in the context."
+6. Do not assume or infer information that is not explicitly mentioned in the context.
+7. Do not include personal opinions or interpretations.
+8. Avoid redundant information; be direct and to the point.
+9. Prioritize clarity and relevance in your answers.
+10. Cite specific parts of the context when forming your answer.
+11. Avoid using ambiguous language; be as specific as possible.
+12. If there are multiple relevant pieces of information in the context, integrate them into a cohesive answer.
+13. If a question is ambiguous, state the ambiguity and request clarification.
+ 
+Context: {context}
+""")
 
 qa_prompt = ChatPromptTemplate.from_messages(
     [
@@ -133,6 +147,14 @@ QA_chain = RunnableWithMessageHistory(
 )
 
 
+def post_process_answer(context, answer, link):
+    # Ensure answer is only derived from the context
+    for content in ["does not provide", "not found"]:
+        if content in answer:
+            return "The answer is not available in the provided context.", ''
+    return answer, link
+
+
 def AzureCosmosQA(human, session_id):
     try:
         with langchain_community.callbacks.get_openai_callback() as cb:
@@ -142,13 +164,20 @@ def AzureCosmosQA(human, session_id):
                     "configurable": {"session_id": session_id}
                 },
             )
-            print(response)
+            source_links = [doc.metadata['source'] for doc in response["context"] if 'source' in doc.metadata]
+            link_counts = collections.Counter(source_links)
+            source_link, most_common_count = link_counts.most_common(1)[0]
+            context = [doc.page_content for doc in response["context"]]
+            print(context)
             response = response["answer"]
+            print(response)
+            source_link = re.sub(r'.*Files', '', source_link)
+            response, source_link = post_process_answer(str(context), response, source_link)
             print(f"Total Tokens: {cb.total_tokens}")
             print(f"Prompt Tokens: {cb.prompt_tokens}")
             print(f"Completion Tokens: {cb.completion_tokens}")
             print(f"Total Cost (USD): ${cb.total_cost}")
-            return response, cb.total_tokens, cb.total_cost
+            return response, cb.total_tokens, cb.total_cost, source_link
     except Exception as e:
         error_details = logger.log(f"Error occurred in fetching response:{str(e)}", "Error")
         raise Exception(error_details)
