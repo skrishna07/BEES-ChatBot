@@ -33,6 +33,7 @@ def get_ip():
 
 def main():
     st.set_page_config(page_title="BEES Chat", page_icon=":books:")
+    st.title("BEES CHATBOT")
     ip = get_ip()
     if "session_id" not in st.session_state:
         st.session_state.session_id = None
@@ -45,7 +46,7 @@ def main():
         if api_response.get("session_id"):
             st.session_state.session_id = api_response.get("session_id")
 
-        chatbot_response = api_response.get("response")
+        chatbot_response = api_response.get("response") + "\n\n" + "source- " + str(api_response.get("sourcelink"))
 
         st.session_state.chat_history.append(chatbot_response)
 
