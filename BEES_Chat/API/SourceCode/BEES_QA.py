@@ -169,7 +169,6 @@ def AzureCosmosQA(human, session_id):
             source_link, most_common_count = link_counts.most_common(1)[0]
             context = [doc.page_content for doc in response["context"]]
             response = response["answer"]
-            print(context)
             source_link = re.sub(r'.*Files', '', source_link)
             response, source_link = post_process_answer(str(context), response, source_link)
             print(f"Total Tokens: {cb.total_tokens}")
