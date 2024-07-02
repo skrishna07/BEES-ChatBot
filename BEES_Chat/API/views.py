@@ -1,17 +1,10 @@
 import datetime
 import json
-import traceback
-import uuid
 from azure.cosmos import CosmosClient, exceptions, PartitionKey
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
-from django.shortcuts import get_object_or_404
-from django.contrib.auth.models import User
-from rest_framework.authtoken.models import Token
-from .serializers import UserSerializer
 from .SourceCode.BEES_QA import AzureCosmosQA
 from dotenv import load_dotenv, find_dotenv
 import os
@@ -27,6 +20,32 @@ History_container = database.create_container_if_not_exists(
     partition_key=PartitionKey(path="/id"),
     offer_throughput=400
 )
+
+
+def get_ip_details(ip, container):
+    try:
+        query_str = f"SELECT * FROM c WHERE c.ip_address = '{ip}'"
+        items = list(container.query_items(query=query_str, enable_cross_partition_query=True))
+    except:
+        items = []
+    if items:
+        response = items
+        return response
+    else:
+        return {}
+
+
+def get_session_details(session_id, container):
+    try:
+        query_str = f"SELECT c.responses  FROM c WHERE c.session_id = '{session_id}'"
+        items = list(container.query_items(query=query_str, enable_cross_partition_query=True))
+    except:
+        items = []
+    if items:
+        response = items
+        return response
+    else:
+        return {}
 
 
 def update_chat_history(container, response, session_id, ip_address):
@@ -56,39 +75,6 @@ def update_chat_history(container, response, session_id, ip_address):
             'datetime': str(datetime.datetime.now())
         }
         container.create_item(body=chat_history_item)
-
-
-@api_view(['POST'])
-def signup(request):
-    serializer = UserSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        user = User.objects.get(username=request.data['username'])
-        user.set_password(request.data['password'])
-        user.save()
-        token = Token.objects.create(user=user)
-        return Response({'token': token.key, 'user': serializer.data})
-    return Response(serializer.errors, status=status.HTTP_200_OK)
-
-
-@api_view(['POST'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def regenerate_token(request):
-    token = Token.objects.get(user=request.user)
-    token.delete()
-    new_token = Token.objects.create(user=request.user)
-    return Response({'token': new_token.key})
-
-
-@api_view(['POST'])
-def login(request):
-    user = get_object_or_404(User, username=request.data['username'])
-    if not user.check_password(request.data['password']):
-        return Response("missing user", status=status.HTTP_404_NOT_FOUND)
-    token, created = Token.objects.get_or_create(user=user)
-    serializer = UserSerializer(user)
-    return Response({'token': token.key, 'user': serializer.data})
 
 
 @api_view(['POST'])
@@ -122,5 +108,41 @@ def AIResponse(request):
     except exceptions.CosmosHttpResponseError as e:
         return Response({"error": str(e), 'status': 'Fail', 'statuscode': 500}, status=500)
 
+    except Exception as e:
+        return Response({"error": str(e), 'status': 'Fail', 'statuscode': 500}, status=500)
+
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def IPDetails(request):
+    try:
+        request_body = json.loads(request.body)
+        ip = request_body.get('ip_address')
+        response = get_ip_details(ip, History_container)
+        return Response(response)
+
+    except json.JSONDecodeError as e:
+        return Response({"error": "Invalid JSON" + "\n e", 'status': 'Fail', 'statuscode': 400}, status=400)
+    except exceptions.CosmosHttpResponseError as e:
+        return Response({"error": str(e), 'status': 'Fail', 'statuscode': 500}, status=500)
+    except Exception as e:
+        return Response({"error": str(e), 'status': 'Fail', 'statuscode': 500}, status=500)
+
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def SessionDetails(request):
+    try:
+        request_body = json.loads(request.body)
+        session_id = request_body.get('session_id')
+        response = get_session_details(session_id, History_container)
+        return Response(response)
+
+    except json.JSONDecodeError as e:
+        return Response({"error": "Invalid JSON" + "\n e", 'status': 'Fail', 'statuscode': 400}, status=400)
+    except exceptions.CosmosHttpResponseError as e:
+        return Response({"error": str(e), 'status': 'Fail', 'statuscode': 500}, status=500)
     except Exception as e:
         return Response({"error": str(e), 'status': 'Fail', 'statuscode': 500}, status=500)

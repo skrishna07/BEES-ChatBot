@@ -3,7 +3,7 @@ from azure.cosmos import CosmosClient, PartitionKey
 from langchain_community.vectorstores.azure_cosmos_db_no_sql import (AzureCosmosDBNoSqlVectorSearch, )
 from langchain_huggingface import HuggingFaceEmbeddings
 from dotenv import load_dotenv, find_dotenv
-from SourceCode.Log import Logger
+from .Log import Logger
 import os
 
 logger = Logger()
@@ -48,7 +48,7 @@ container = database.get_container_client(container_name)
 
 def Load_ChunkData(Data):
     try:
-        text_splitter = langchain_text_splitters.RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=150)
+        text_splitter = langchain_text_splitters.RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=100)
         docs = text_splitter.split_documents(Data)
 
         AzureCosmosDBNoSqlVectorSearch.from_documents(
