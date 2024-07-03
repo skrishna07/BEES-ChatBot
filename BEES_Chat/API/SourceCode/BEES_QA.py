@@ -146,6 +146,15 @@ QA_chain = RunnableWithMessageHistory(
     return_source_documents=True
 )
 
+greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening"]
+
+
+def is_greeting(sentence):
+    # Convert the sentence to lowercase for comparison
+    sentence_lower = sentence.lower()
+    # Check if the sentence starts with any of the common greetings
+    return any(sentence_lower.startswith(greeting) for greeting in greetings)
+
 
 def post_process_answer(context, answer, link):
     # Ensure answer is only derived from the context
@@ -171,6 +180,8 @@ def AzureCosmosQA(human, session_id):
             response = response["answer"]
             source_link = re.sub(r'.*Files', '', source_link)
             response, source_link = post_process_answer(str(context), response, source_link)
+            if is_greeting(human):
+                source_link = ''
             print(f"Total Tokens: {cb.total_tokens}")
             print(f"Prompt Tokens: {cb.prompt_tokens}")
             print(f"Completion Tokens: {cb.completion_tokens}")
