@@ -13,7 +13,7 @@ def call_api(user_message, ip, session_id):
     # Send POST request with user message as data
     data = {"query": user_message, "ip_address": ip,
             "session_id": session_id}
-    headers = {"Authorization": "token 616a306d17080c0fdbe9e7fefccf5641c838754b"}
+    headers = {"Authorization": "token fae0e0732952a9dd93cc3205356303e1c1010579"}
     response = requests.post(api_url, json=data, headers=headers)
     # Check for successful response
     if response.status_code == 200:

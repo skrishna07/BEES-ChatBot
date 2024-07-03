@@ -100,7 +100,7 @@ contextualize_q_prompt = ChatPromptTemplate.from_messages(
 llm = AzureChatOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
     azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
-    openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"), temperature=0, max_tokens=2000
+    openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"), temperature=0, max_tokens=500
 )
 history_aware_retriever = langchain.chains.history_aware_retriever.create_history_aware_retriever(
     llm, qa_retriever, contextualize_q_prompt)
