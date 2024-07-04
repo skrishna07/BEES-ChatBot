@@ -79,7 +79,7 @@ vectorstore = AzureCosmosDBNoSqlVectorSearch(embedding=openai_embeddings,
                                              cosmos_database_properties=cosmos_database_properties)
 qa_retriever = vectorstore.as_retriever(
     search_type="similarity",
-    search_kwargs={"k": 5},
+    search_kwargs={"k": 10},
     return_source_documents=True,
 )
 
