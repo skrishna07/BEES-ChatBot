@@ -21,4 +21,6 @@ urlpatterns = [
     path('register/',views.signupPage,name='register'),
     path('dashboard/',views.dashboard,name='dashboard'),
     path('logout/',views.logoutFuntion,name='logout'),
+    path('chatHistory/',views.getChatHistory,name='chatHistory'),
+    path('sessionHistory/',views.get_session_details,name='sessionHistory'),
 ]

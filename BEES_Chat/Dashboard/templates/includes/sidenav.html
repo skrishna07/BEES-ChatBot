@@ -2,10 +2,10 @@
   <div class="scrollbar-inner">
     <!-- Brand -->
     <div class="sidenav-header  align-items-center">
-      {% comment %} <a class="navbar-brand" href="/">
-        <img src="/static/assets/img/brand/blue.png" class="navbar-brand-img" alt="Argon Design - Jinja Template Logo.">
-      </a> {% endcomment %}
-      <h1>Biological-E</h1>
+      <a class="navbar-brand" href="#">
+        <img src="/static/assets/img/brand/biological-e.png" class="navbar-brand-img">
+      </a> 
+      <link rel="icon" href="/static/assets/img/brand/biological-e.png" type="image/png">
     </div>
     <div class="navbar-inner">
       <!-- Collapse -->
@@ -37,6 +37,13 @@
             <a class="nav-link {% if 'index' in segment %} active {% endif %}" href="/">
               <i class="ni ni-tv-2 text-primary"></i>
               <span class="nav-link-text">Dashboard</span>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link {% if 'index' in segment %} active {% endif %}" href="/register">
+              <i class="ni ni-tv-2 text-primary"></i>
+              <span class="nav-link-text">User Management</span>
             </a>
           </li>
           
