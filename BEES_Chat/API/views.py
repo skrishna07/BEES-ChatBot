@@ -93,10 +93,10 @@ def AIResponse(request):
             return Response({"error": "Query not provided"}, status=400)
 
         response_data, token_used, total_cost, source = AzureCosmosQA(query, session_id)
-        response_dict_history = {'query': query, 'response': response_data, 'sourcelink': source,
+        response_dict_history = {'query': query, 'response': response_data, 'source': source,
                                  'status': 'success',
                                  'token_used': token_used, 'total_cost': total_cost, 'statuscode': 200}
-        response_dict = {'response': response_data, 'sourcelink': source, 'session_id': session_id,
+        response_dict = {'response': response_data, 'source': source, 'session_id': session_id,
                          'status': 'success',
                          'token_used': token_used, 'total_cost': total_cost, 'statuscode': 200}
         # Save to Cosmos DB if response is successful

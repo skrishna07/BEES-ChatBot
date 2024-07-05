@@ -7,10 +7,9 @@ import langchain.chains.retrieval
 import langchain_community.callbacks
 from azure.cosmos import CosmosClient, PartitionKey
 from .azure_no_sql import (AzureCosmosDBNoSqlVectorSearch, )
-from langchain_huggingface import HuggingFaceEmbeddings
 from dotenv import load_dotenv, find_dotenv
 import os
-from langchain_openai import AzureChatOpenAI
+from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
@@ -39,8 +38,8 @@ cosmos_vector_property = "embedding"
 os.environ["AZURE_OPENAI_API_KEY"] = os.getenv('Azure_OPENAI_API_KEY')
 os.environ["AZURE_OPENAI_ENDPOINT"] = os.getenv('Azure_OPENAI_API_BASE')
 os.environ["AZURE_OPENAI_API_VERSION"] = "2023-09-15-preview"
-os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"] = "qnagpt5"
-os.environ["AZURE_OPENAI_CHAT_DEPLOYMENT_NAME"] = "bradsol-embeddings"
+os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"] = "gpt35"
+os.environ["AZURE_EMBEDDINGS_DEPLOYMENT_NAME"] = "bradsol-ada-embeddings"
 
 indexing_policy = {
     "indexingMode": "consistent",
@@ -67,8 +66,12 @@ partition_key = PartitionKey(path="/id")
 cosmos_container_properties = {"partition_key": partition_key}
 cosmos_database_properties = {"etag": None, "match_condition": None}
 
-openai_embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-
+openai_embeddings = AzureOpenAIEmbeddings(
+    azure_deployment=os.getenv("AZURE_EMBEDDINGS_DEPLOYMENT_NAME"),
+    api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+    openai_api_key=os.getenv('Azure_OPENAI_API_KEY'),
+)
 vectorstore = AzureCosmosDBNoSqlVectorSearch(embedding=openai_embeddings,
                                              cosmos_client=cosmos_client,
                                              database_name=database_name,
@@ -79,16 +82,22 @@ vectorstore = AzureCosmosDBNoSqlVectorSearch(embedding=openai_embeddings,
                                              cosmos_database_properties=cosmos_database_properties)
 qa_retriever = vectorstore.as_retriever(
     search_type="similarity",
-    search_kwargs={"k": 10},
+    search_kwargs={"k": 7},
     return_source_documents=True,
 )
 
 ### Contextualize question ###
-contextualize_q_system_prompt = ("""Given a chat history and the latest user question, 
-reformulate it into a standalone question that can be understood without the context of the chat.
-Don't answer the question itself. If the question already makes sense independently, return it as is.
-If reformulation is necessary, use concise language and limit the response to three sentences maximum. 
-When unsure, state that you don't know."""
+contextualize_q_system_prompt = ("""
+1. Attempt to answer from context: 
+   Try to answer the question using given context. However, avoid using external information sources like search engines.
+2. Reformulate for chat history:
+   If the question cannot be answered directly and relies on context from the chat history to be understood, rephrase it into a standalone question. This standalone question should be clear, concise, and ideally answerable using only the provided chat history.
+3. Uncertainty: 
+   If you cannot answer the question using either the chat history or context, state that you don't know.
+4. New Question:
+    If question is not relevant ot chat history get content from vectorstore.
+
+"""
                                  )
 contextualize_q_prompt = ChatPromptTemplate.from_messages(
     [
@@ -110,8 +119,7 @@ system_prompt = ("""
 You are a highly knowledgeable and concise assistant specializing in question-answering tasks. Please follow these guidelines:
  
 1. Answer only with relevant information derived from the provided context.
-2. Provide precise and concise answers strictly within the context.
-3. Indicate your confidence in the answer using a scale of 1 (low) to 5 (high).
+2. Provide precise and concise answers within the context.
 4. Ensure your answers are grammatically correct and complete sentences.
 5. If the context does not contain the answer, state "The answer is not found in the context."
 6. Do not assume or infer information that is not explicitly mentioned in the context.
@@ -122,7 +130,26 @@ You are a highly knowledgeable and concise assistant specializing in question-an
 11. Avoid using ambiguous language; be as specific as possible.
 12. If there are multiple relevant pieces of information in the context, integrate them into a cohesive answer.
 13. If a question is ambiguous, state the ambiguity and request clarification.
- 
+14. Do not provide general knowledge or background information unless explicitly requested.
+15. If the answer requires multiple parts, number each part clearly
+17. If the question is about bus routes in table format,provide context in below format.
+    <table>  
+      <tr>  
+        <th>Pickup Point</th>  
+        <th>Pickup Time</th>  
+      </tr>  
+      <tr>  
+        <td>Miyapur</td>  
+        <td>HH:MM:SS:s</td>  
+      </tr> 
+    </table> 
+18. Avoid greetings, sign-offs, and any conversational fillers.
+19. Avoid the greetings or general queries like below content and state 'I am BeesChat Assistant, How can i assist you'
+    greeting = ["hello", "hi", "hey", "good morning", "good afternoon", "good evening"]
+    general_inquiries = ["how are you", "what's up", "how's it going", "what's new"]
+
+
+
 Context: {context}
 """)
 
@@ -150,10 +177,20 @@ greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good eveni
 
 
 def is_greeting(sentence):
-    # Convert the sentence to lowercase for comparison
-    sentence_lower = sentence.lower()
-    # Check if the sentence starts with any of the common greetings
-    return any(sentence_lower.startswith(greeting) for greeting in greetings)
+    # Simple rule-based system for greetings and general inquiries
+    greeting = ["hello", "hi", "hey", "good morning", "good afternoon", "good evening"]
+    general_inquiries = ["how are you", "what's up", "how's it going", "what's new"]
+
+    # Normalize the query
+    normalized_query = sentence.lower().split()
+
+    if any(greet in normalized_query for greet in greeting):
+        return "Hello! How can I assist you today?", True
+
+    if any(inquiry in normalized_query for inquiry in general_inquiries):
+        return "I'm an AI assistant, here to help you with your questions.", True
+
+    return "", False
 
 
 def post_process_answer(context, answer, link):
@@ -167,21 +204,26 @@ def post_process_answer(context, answer, link):
 def AzureCosmosQA(human, session_id):
     try:
         with langchain_community.callbacks.get_openai_callback() as cb:
+            greet, is_greet = is_greeting(human)
+            if is_greet:
+                return greet, cb.total_tokens, cb.total_cost, ''
             response = QA_chain.invoke(
                 {"input": human},
                 config={
-                    "configurable": {"session_id": session_id}
+                    "configurable": {"session_id": session_id},
                 },
             )
             source_links = [doc.metadata['source'] for doc in response["context"] if 'source' in doc.metadata]
-            link_counts = collections.Counter(source_links)
-            source_link, most_common_count = link_counts.most_common(1)[0]
+            # link_counts = collections.Counter(source_links)
+            # source_link, most_common_count = link_counts.most_common(1)[0]
+            source_link = source_links[0]
             context = [doc.page_content for doc in response["context"]]
+            print("\n\n\n")
+            print(context)
+            print("\n\n\n")
             response = response["answer"]
             source_link = re.sub(r'.*Files', '', source_link)
             response, source_link = post_process_answer(str(context), response, source_link)
-            if is_greeting(human):
-                source_link = ''
             print(f"Total Tokens: {cb.total_tokens}")
             print(f"Prompt Tokens: {cb.prompt_tokens}")
             print(f"Completion Tokens: {cb.completion_tokens}")

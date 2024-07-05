@@ -1,7 +1,7 @@
 import langchain_text_splitters
 from azure.cosmos import CosmosClient, PartitionKey
 from langchain_community.vectorstores.azure_cosmos_db_no_sql import (AzureCosmosDBNoSqlVectorSearch, )
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_openai import AzureOpenAIEmbeddings
 from dotenv import load_dotenv, find_dotenv
 from .Log import Logger
 import os
@@ -14,6 +14,13 @@ cosmos_key = os.getenv('WebChat_Key')
 cosmos_database = os.getenv('WebChat_DB')
 cosmos_collection = os.getenv('WebChatChunk_Container')
 cosmos_vector_property = "embedding"
+os.environ["AZURE_OPENAI_API_KEY"] = os.getenv('Azure_OPENAI_API_KEY')
+os.environ["AZURE_OPENAI_ENDPOINT"] = os.getenv('Azure_OPENAI_API_BASE')
+os.environ["AZURE_OPENAI_API_VERSION"] = "2023-09-15-preview"
+os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"] = "gpt35"
+os.environ["AZURE_EMBEDDINGS_MODEL_NAME"] = "text-embedding-ada-002"
+os.environ["AZURE_EMBEDDINGS_DEPLOYMENT_NAME"] = "bradsol-ada-embeddings"
+
 
 indexing_policy = {
     "indexingMode": "consistent",
@@ -38,12 +45,16 @@ container_name = cosmos_collection
 partition_key = PartitionKey(path="/id")
 cosmos_container_properties = {"partition_key": partition_key}
 cosmos_database_properties = {"etag": None, "match_condition": None}
-
-openai_embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 cosmos_client = CosmosClient(os.getenv('WebChat_EndPoint'), cosmos_key)
-
 database = cosmos_client.get_database_client(database_name)
 container = database.get_container_client(container_name)
+
+openai_embeddings = AzureOpenAIEmbeddings(
+    azure_deployment=os.getenv("AZURE_EMBEDDINGS_DEPLOYMENT_NAME"),
+    api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+    openai_api_key=os.getenv('Azure_OPENAI_API_KEY'),
+)
 
 
 def Load_ChunkData(Data):

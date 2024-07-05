@@ -270,14 +270,17 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
             )
         )
         docs_and_scores = []
+        print(query)
         items = list(
             self._container.query_items(query=query, enable_cross_partition_query=True)
         )
         for item in items:
             text = item["text"]
             score = item["SimilarityScore"]
+            link = item["source"]
             meta = {"source": item["source"], "category": item["category"]}
-            docs_and_scores.append((Document(page_content=text, metadata=meta), score))
+            docs_and_scores.append(
+                (Document(page_content=f"{text}", metadata=meta), score))
         return docs_and_scores
 
     def similarity_search_with_score(
