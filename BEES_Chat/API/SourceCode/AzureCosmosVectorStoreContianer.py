@@ -59,7 +59,7 @@ openai_embeddings = AzureOpenAIEmbeddings(
 
 def Load_ChunkData(Data):
     try:
-        text_splitter = langchain_text_splitters.RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=100)
+        text_splitter = langchain_text_splitters.RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=250)
         docs = text_splitter.split_documents(Data)
 
         AzureCosmosDBNoSqlVectorSearch.from_documents(

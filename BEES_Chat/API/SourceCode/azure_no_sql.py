@@ -1,19 +1,36 @@
 from __future__ import annotations
 
+import itertools
 import uuid
 import warnings
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple
 
+import langchain_core.runnables
 import numpy as np
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStore
 
 from langchain_community.vectorstores.utils import maximal_marginal_relevance
+# import nltk
+#
+# # Download necessary resources from NLTK
+# nltk.download('punkt')
 
 if TYPE_CHECKING:
     from azure.cosmos.cosmos_client import CosmosClient
 
+def keyword_query(text, k):
+    tokens = nltk.word_tokenize(text)
+    stopwords = nltk.corpus.stopwords.words('english')
+    filtered_tokens = [token for token in tokens if token not in stopwords]
+    filtered_tokens = filtered_tokens[::-1]
+    where_clause = ""
+    for keyword in filtered_tokens:
+        where_clause += f" Lower(c.text) LIKE Lower('%{keyword}%') OR"
+    where_clause = where_clause[:-3]
+    query = f"""SELECT Top {k} c.id, c.text, c.source, c.category FROM c WHERE {where_clause}"""
+    return query
 
 class AzureCosmosDBNoSqlVectorSearch(VectorStore):
     """`Azure Cosmos DB for NoSQL` vector store.
@@ -255,14 +272,14 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
 
     def _similarity_search_with_score(
             self,
+            user_query,
             embeddings: List[float],
             k: int = 4,
     ) -> List[Tuple[Document, float]]:
         query = (
-            "SELECT TOP {} c.id, c.{}, c.text,c.source,c.category, VectorDistance(c.{}, {}) AS "
+            "SELECT TOP {} c.id, c.text,c.source,c.category, VectorDistance(c.{}, {}) AS "
             "SimilarityScore FROM c ORDER BY VectorDistance(c.{}, {})".format(
                 k,
-                self._embedding_key,
                 self._embedding_key,
                 embeddings,
                 self._embedding_key,
@@ -270,11 +287,17 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
             )
         )
         docs_and_scores = []
-        print(query)
-        items = list(
+        # query2 = keyword_query(user_query,k)
+        items1 = list(
             self._container.query_items(query=query, enable_cross_partition_query=True)
         )
-        for item in items:
+        # items2 = list(
+        #     self._container.query_items(query=query2, enable_cross_partition_query=True)
+        # )
+        # Efficient merging using chain from itertools
+        # items = list(itertools.chain(items1, items2))
+        # print(items)
+        for item in items1:
             text = item["text"]
             score = item["SimilarityScore"]
             link = item["source"]
@@ -289,7 +312,7 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
             k: int = 4,
     ) -> List[Tuple[Document, float]]:
         embeddings = self._embedding.embed_query(query)
-        docs_and_scores = self._similarity_search_with_score(embeddings=embeddings, k=k)
+        docs_and_scores = self._similarity_search_with_score(embeddings=embeddings, k=k, user_query=query)
         return docs_and_scores
 
     def similarity_search(

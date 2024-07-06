@@ -82,23 +82,18 @@ vectorstore = AzureCosmosDBNoSqlVectorSearch(embedding=openai_embeddings,
                                              cosmos_database_properties=cosmos_database_properties)
 qa_retriever = vectorstore.as_retriever(
     search_type="similarity",
-    search_kwargs={"k": 7},
+    search_kwargs={"k": 3},
     return_source_documents=True,
 )
 
 ### Contextualize question ###
-contextualize_q_system_prompt = ("""
-1. Attempt to answer from context: 
-   Try to answer the question using given context. However, avoid using external information sources like search engines.
-2. Reformulate for chat history:
-   If the question cannot be answered directly and relies on context from the chat history to be understood, rephrase it into a standalone question. This standalone question should be clear, concise, and ideally answerable using only the provided chat history.
-3. Uncertainty: 
-   If you cannot answer the question using either the chat history or context, state that you don't know.
-4. New Question:
-    If question is not relevant ot chat history get content from vectorstore.
-
-"""
-                                 )
+contextualize_q_system_prompt = (
+    "Given a chat history and the latest user question "
+    "which might reference context in the chat history, "
+    "formulate a standalone question which can be understood "
+    "without the chat history. Do NOT answer the question, "
+    "just reformulate it if needed and otherwise return it as is."
+)
 contextualize_q_prompt = ChatPromptTemplate.from_messages(
     [
         ("system", contextualize_q_system_prompt),
@@ -132,17 +127,6 @@ You are a highly knowledgeable and concise assistant specializing in question-an
 13. If a question is ambiguous, state the ambiguity and request clarification.
 14. Do not provide general knowledge or background information unless explicitly requested.
 15. If the answer requires multiple parts, number each part clearly
-17. If the question is about bus routes in table format,provide context in below format.
-    <table>  
-      <tr>  
-        <th>Pickup Point</th>  
-        <th>Pickup Time</th>  
-      </tr>  
-      <tr>  
-        <td>Miyapur</td>  
-        <td>HH:MM:SS:s</td>  
-      </tr> 
-    </table> 
 18. Avoid greetings, sign-offs, and any conversational fillers.
 19. Avoid the greetings or general queries like below content and state 'I am BeesChat Assistant, How can i assist you'
     greeting = ["hello", "hi", "hey", "good morning", "good afternoon", "good evening"]
@@ -173,7 +157,6 @@ QA_chain = RunnableWithMessageHistory(
     return_source_documents=True
 )
 
-greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening"]
 
 
 def is_greeting(sentence):
@@ -195,9 +178,11 @@ def is_greeting(sentence):
 
 def post_process_answer(context, answer, link):
     # Ensure answer is only derived from the context
-    for content in ["does not provide", "not found"]:
+    for content in ["does not provide", "not found", "does not contain"]:
         if content in answer:
             return "The answer is not available in the provided context.", ''
+    if "BeesChat Assistant" in answer:
+        return answer, ''
     return answer, link
 
 
