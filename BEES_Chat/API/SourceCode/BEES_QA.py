@@ -180,7 +180,7 @@ def post_process_answer(context, answer, link):
     for content in ["does not provide", "not found", "does not contain", ]:
         if content.lower() in answer.lower():
             return "The answer is not available in the provided context.", ''
-    if "BeesChat Assistant" in answer or "unable to" in answer or "feel free" in answer or "to ask" in answer:
+    if "BeesChat Assistant" in answer or "unable to" in answer or "feel free" in answer or "to ask" in answer or "How can I help you" in answer or "assist you" in answer:
         return answer, ''
     return answer, link
 
