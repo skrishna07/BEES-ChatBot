@@ -158,7 +158,6 @@ QA_chain = RunnableWithMessageHistory(
 )
 
 
-
 def is_greeting(sentence):
     # Simple rule-based system for greetings and general inquiries
     greeting = ["hello", "hi", "hey", "good morning", "good afternoon", "good evening"]
@@ -178,10 +177,10 @@ def is_greeting(sentence):
 
 def post_process_answer(context, answer, link):
     # Ensure answer is only derived from the context
-    for content in ["does not provide", "not found", "does not contain"]:
-        if content in answer:
+    for content in ["does not provide", "not found", "does not contain", ]:
+        if content.lower() in answer.lower():
             return "The answer is not available in the provided context.", ''
-    if "BeesChat Assistant" in answer:
+    if "BeesChat Assistant" in answer or "unable to" in answer or "feel free" in answer or "to ask" in answer:
         return answer, ''
     return answer, link
 
