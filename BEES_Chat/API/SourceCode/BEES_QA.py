@@ -93,6 +93,8 @@ contextualize_q_system_prompt = (
     "formulate a standalone question which can be understood "
     "without the chat history. Do NOT answer the question, "
     "just reformulate it if needed and otherwise return it as is."
+    "If the context does not contain the answer, state 'The answer is not found in the context.'"
+    "Avoid general knowledge questions and,state 'The answer is not found in the context.'"
 )
 contextualize_q_prompt = ChatPromptTemplate.from_messages(
     [
@@ -131,6 +133,8 @@ You are a highly knowledgeable and concise assistant specializing in question-an
 19. Avoid the greetings or general queries like below content and state 'I am BeesChat Assistant, How can i assist you'
     greeting = ["hello", "hi", "hey", "good morning", "good afternoon", "good evening"]
     general_inquiries = ["how are you", "what's up", "how's it going", "what's new"]
+20. Avoid general knowledge questions and,state "The answer is not found in the context."
+
 
 
 
@@ -177,7 +181,8 @@ def is_greeting(sentence):
 
 def post_process_answer(context, answer, link):
     # Ensure answer is only derived from the context
-    for content in ["does not provide", "not found", "does not contain", "not provided"]:
+    for content in ["does not provide", "not found", "does not contain", "not provided", "does not mention",
+                    "does not"]:
         if content.lower() in answer.lower():
             return "The answer is not available in the provided context.", ''
     if "BeesChat Assistant" in answer or "unable to" in answer or "feel free" in answer or "to ask" in answer or "How can I help you" in answer or "assist you" in answer:
