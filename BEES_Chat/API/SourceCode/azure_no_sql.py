@@ -20,17 +20,17 @@ from langchain_community.vectorstores.utils import maximal_marginal_relevance
 if TYPE_CHECKING:
     from azure.cosmos.cosmos_client import CosmosClient
 
-def keyword_query(text, k):
-    tokens = nltk.word_tokenize(text)
-    stopwords = nltk.corpus.stopwords.words('english')
-    filtered_tokens = [token for token in tokens if token not in stopwords]
-    filtered_tokens = filtered_tokens[::-1]
-    where_clause = ""
-    for keyword in filtered_tokens:
-        where_clause += f" Lower(c.text) LIKE Lower('%{keyword}%') OR"
-    where_clause = where_clause[:-3]
-    query = f"""SELECT Top {k} c.id, c.text, c.source, c.category FROM c WHERE {where_clause}"""
-    return query
+# def keyword_query(text, k):
+#     tokens = nltk.word_tokenize(text)
+#     stopwords = nltk.corpus.stopwords.words('english')
+#     filtered_tokens = [token for token in tokens if token not in stopwords]
+#     filtered_tokens = filtered_tokens[::-1]
+#     where_clause = ""
+#     for keyword in filtered_tokens:
+#         where_clause += f" Lower(c.text) LIKE Lower('%{keyword}%') OR"
+#     where_clause = where_clause[:-3]
+#     query = f"""SELECT Top {k} c.id, c.text, c.source, c.category FROM c WHERE {where_clause}"""
+#     return query
 
 class AzureCosmosDBNoSqlVectorSearch(VectorStore):
     """`Azure Cosmos DB for NoSQL` vector store.
@@ -278,8 +278,10 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
     ) -> List[Tuple[Document, float]]:
         query = (
             "SELECT TOP {} c.id, c.text,c.source,c.category, VectorDistance(c.{}, {}) AS "
-            "SimilarityScore FROM c ORDER BY VectorDistance(c.{}, {})".format(
+            "SimilarityScore FROM c  Where VectorDistance(c.{}, {}) >= 0.78 ORDER BY VectorDistance(c.{}, {})".format(
                 k,
+                self._embedding_key,
+                embeddings,
                 self._embedding_key,
                 embeddings,
                 self._embedding_key,
@@ -299,7 +301,10 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
         # print(items)
         for item in items1:
             text = item["text"]
+            if text == '©':
+                continue
             score = item["SimilarityScore"]
+            print(score)
             link = item["source"]
             meta = {"source": item["source"], "category": item["category"]}
             docs_and_scores.append(

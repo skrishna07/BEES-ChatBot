@@ -45,9 +45,10 @@ def main():
         api_response = call_api(human, ip, st.session_state.session_id)
         if api_response.get("session_id"):
             st.session_state.session_id = api_response.get("session_id")
-
-        chatbot_response = api_response.get("response") + "\n\n" + "source- " + str(api_response.get("sourcelink"))
-
+        if api_response.get("source"):
+            chatbot_response = str(api_response.get("response")) + "\n\nsource - " + str(api_response.get("source"))
+        else:
+            chatbot_response = str(api_response.get("response"))
         st.session_state.chat_history.append(chatbot_response)
 
     for i, msg in enumerate(st.session_state.chat_history):

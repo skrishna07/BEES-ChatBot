@@ -93,8 +93,6 @@ contextualize_q_system_prompt = (
     "formulate a standalone question which can be understood "
     "without the chat history. Do NOT answer the question, "
     "just reformulate it if needed and otherwise return it as is."
-    "If the context does not contain the answer, state 'The answer is not found in the context.'"
-    "Avoid general knowledge questions and,state 'The answer is not found in the context.'"
 )
 contextualize_q_prompt = ChatPromptTemplate.from_messages(
     [
@@ -175,7 +173,6 @@ def is_greeting(sentence):
 
     if any(inquiry in normalized_query for inquiry in general_inquiries):
         return "I'm an AI assistant, here to help you with your questions.", True
-
     return "", False
 
 
@@ -205,12 +202,16 @@ def AzureCosmosQA(human, session_id):
             source_links = [doc.metadata['source'] for doc in response["context"] if 'source' in doc.metadata]
             # link_counts = collections.Counter(source_links)
             # source_link, most_common_count = link_counts.most_common(1)[0]
-            source_link = source_links[0]
             context = [doc.page_content for doc in response["context"]]
             print("\n\n\n")
             print(context)
             print("\n\n\n")
             response = response["answer"]
+            if source_links:
+                source_link = source_links[0]
+            else:
+                source_link = ''
+                response = "The answer is not available in the provided context."
             source_link = re.sub(r'.*Files', '', source_link)
             response, source_link = post_process_answer(str(context), response, source_link)
             print(f"Total Tokens: {cb.total_tokens}")
