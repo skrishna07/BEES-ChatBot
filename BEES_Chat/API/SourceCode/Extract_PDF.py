@@ -4,6 +4,7 @@ from PyPDF2 import PdfReader
 from PIL import Image
 import os
 from SourceCode.Log import Logger
+from SourceCode.Azure_OCR import analyze_read
 
 logger = Logger()
 
@@ -61,6 +62,8 @@ def process_pdf(file_path, category, id):
         pdf_reader = PdfReader(file_path)
         for page_num in range(len(pdf_reader.pages)):
             text = pdf_page_to_text(pdf_document, pdf_reader, page_num)
+            text = text.replace('\\n', '')
+            text = text.replace('@', '')
             metadata = {'source': file_path, 'page': page_num, 'category': category, 'unique_id': id}
             data.append(Document(page_content=text, metadata=metadata))
         return data
@@ -72,7 +75,9 @@ def process_pdf(file_path, category, id):
 def process_image(file_path, category, id):
     try:
         data = []
-        text = image_to_text(file_path)
+        text = analyze_read(file_path)
+        text = text.replace('\\n', '')
+        text = text.replace('@', '')
         metadata = {'source': file_path, 'category': category, 'unique_id': id}
         data.append(Document(page_content=text, metadata=metadata))
         return data

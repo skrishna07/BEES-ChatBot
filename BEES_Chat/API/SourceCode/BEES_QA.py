@@ -82,7 +82,7 @@ vectorstore = AzureCosmosDBNoSqlVectorSearch(embedding=openai_embeddings,
                                              cosmos_database_properties=cosmos_database_properties)
 qa_retriever = vectorstore.as_retriever(
     search_type="similarity",
-    search_kwargs={"k": 3},
+    search_kwargs={"k": 5},
     return_source_documents=True,
 )
 
@@ -132,6 +132,13 @@ You are a highly knowledgeable and concise assistant specializing in question-an
     greeting = ["hello", "hi", "hey", "good morning", "good afternoon", "good evening"]
     general_inquiries = ["how are you", "what's up", "how's it going", "what's new"]
 20. Avoid general knowledge questions and,state "The answer is not found in the context."
+21. If the question is related to bus schedules or routes, provide the answer in below html table format.
+    <table>
+      <tr>
+        <th>Area</th>
+        <th>Time</th>
+      </tr>
+    </table>
 
 
 
@@ -205,6 +212,8 @@ def AzureCosmosQA(human, session_id):
             context = [doc.page_content for doc in response["context"]]
             print("\n\n\n")
             print(context)
+            print("\n")
+            print(response["answer"])
             print("\n\n\n")
             response = response["answer"]
             if source_links:
