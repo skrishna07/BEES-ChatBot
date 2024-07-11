@@ -278,10 +278,8 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
     ) -> List[Tuple[Document, float]]:
         query = (
             "SELECT TOP {} c.id, c.text,c.source,c.category, VectorDistance(c.{}, {}) AS "
-            "SimilarityScore FROM c  Where VectorDistance(c.{}, {}) >= 0.78 ORDER BY VectorDistance(c.{}, {})".format(
+            "SimilarityScore FROM c  ORDER BY VectorDistance(c.{}, {})".format(
                 k,
-                self._embedding_key,
-                embeddings,
                 self._embedding_key,
                 embeddings,
                 self._embedding_key,

@@ -82,7 +82,7 @@ vectorstore = AzureCosmosDBNoSqlVectorSearch(embedding=openai_embeddings,
                                              cosmos_database_properties=cosmos_database_properties)
 qa_retriever = vectorstore.as_retriever(
     search_type="similarity",
-    search_kwargs={"k": 5},
+    search_kwargs={"k": 1},
     return_source_documents=True,
 )
 
@@ -104,7 +104,7 @@ contextualize_q_prompt = ChatPromptTemplate.from_messages(
 llm = AzureChatOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
     azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
-    openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"), temperature=0, max_tokens=500
+    openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"), temperature=0.1, max_tokens=500
 )
 history_aware_retriever = langchain.chains.history_aware_retriever.create_history_aware_retriever(
     llm, qa_retriever, contextualize_q_prompt)
@@ -139,10 +139,6 @@ You are a highly knowledgeable and concise assistant specializing in question-an
         <th>Time</th>
       </tr>
     </table>
-
-
-
-
 Context: {context}
 """)
 
