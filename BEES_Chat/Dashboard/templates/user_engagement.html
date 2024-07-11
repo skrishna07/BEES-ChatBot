@@ -1,0 +1,429 @@
+{% extends 'layouts/base.html' %} 
+{% block title %} User Engagement {% endblock title%}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}
+
+{% endblock stylesheets %} 
+{% block content %}
+
+<!-- Header -->
+<div class="header bg-primary pb-6">
+  <div class="container-fluid">
+    <div class="header-body">
+      <!-- Card stats -->
+    </div>
+  </div>
+</div>
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
+<!-- Page content -->
+<div class="container-fluid mt--6">
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <!-- Card header -->
+        <div class="card-header border-0">
+          <h3 class="mb-0">User Engagement</h3>
+        </div>
+        <br>
+        <div class="row">
+          <div class="col-xl-3 col-md-6 ml-4">
+            <div class="card card-stats custom-card-height">
+              <!-- Card body -->
+              <div class="card-body">
+                <div class="row">
+                  <div class="col">
+                    <h6 class="card-title text-uppercase text-muted mb-0">Daily Unique Users</h6>
+                    <span class="h2 font-weight-bold mb-0" id="daily_unique_users"></span>
+                  </div>
+                  <div class="col-auto">
+                    <div class="icon icon-shape bg-gradient-red text-white rounded-circle shadow">
+                      <i class="ni ni-active-40"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-md-6">
+            <div class="card card-stats custom-card-height">
+              <!-- Card body -->
+              <div class="card-body">
+                <div class="row">
+                  <div class="col">
+                    <h6 class="card-title text-uppercase text-muted mb-0">Monthly Unique Users</h6>
+                    <span class="h2 font-weight-bold mb-0" id="monthly_unique_users"></span>
+                  </div>
+                  <div class="col-auto">
+                    <div class="icon icon-shape bg-gradient-orange text-white rounded-circle shadow">
+                      <i class="ni ni-chart-pie-35"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-md-6">
+            <div class="card card-stats custom-card-height">
+              <!-- Card body -->
+              <div class="card-body">
+                <div class="row">
+                  <div class="col">
+                    <h6 class="card-title text-uppercase text-muted mb-0">Frequency of Use</h6>
+                    <span class="h2 font-weight-bold mb-0" id="frequecy_of_use"></span>
+                  </div>
+                  <div class="col-auto">
+                    <div class="icon icon-shape bg-gradient-green text-white rounded-circle shadow">
+                      <i class="ni ni-money-coins"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+        <div class="row">
+          
+          <div class="col-xl-4 col-md-6 ml-4">
+            <div class="card card-stats custom-card-height">
+              <!-- Card body -->
+              <div class="card-body">
+                <div class="row">
+                  <div class="col">
+                    <h6 class="card-title text-uppercase text-muted mb-0">Average Token Per User</h6>
+                    <span class="h2 font-weight-bold mb-0" id="average_tokens_per_ip"></span>
+                  </div>
+                  <div class="col-auto">
+                    <div class="icon icon-shape bg-gradient-info text-white rounded-circle shadow">
+                      <i class="ni ni-chart-bar-32"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>  
+          <div class="col-xl-3 col-md-6">
+            <div class="card card-stats custom-card-height">
+              <!-- Card body -->
+              <div class="card-body">
+                <div class="row">
+                  <div class="col">
+                    <h6 class="card-title text-uppercase text-muted mb-0">Average Token Cost Per User</h6>
+                    <span class="h2 font-weight-bold mb-0" id="average_token_cost_per_user"></span>
+                  </div>
+                  <div class="col-auto">
+                    <div class="icon icon-shape bg-gradient-red text-white rounded-circle shadow">
+                      <i class="ni ni-active-40"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-xl-3 col-md-6">
+            <div class="card card-stats custom-card-height">
+              <!-- Card body -->
+              <div class="card-body">
+                <div class="row">
+                  <div class="col">
+                    <h6 class="card-title text-uppercase text-muted mb-0">Retention Rate</h6>
+                    <span class="h2 font-weight-bold mb-0" id="user_retention_rate"></span>
+                  </div>
+                  <div class="col-auto">
+                    <div class="icon icon-shape bg-gradient-green text-white rounded-circle shadow">
+                      <i class="ni ni-money-coins"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      
+        <div class="mt-3 ml-3">
+          <label for="from-date">From: </label>
+          <input type="text" id="from-date" class="datepicker" required/>
+          <label for="to-date">To: </label>
+          <input type="text" id="to-date" class="datepicker" required/>
+          <button class="btn btn-success" id="filter">Filter</button>
+          <button class="btn btn-danger" id="resetBtn">Reset</button>
+        </div>
+        <br /><br />
+        <table id="chatHistory" class="display">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Session ID</th>
+              <th>IP Address</th>
+              <th>Token Used</th>
+              <th>Tokens Cost</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Populate this with chat history data -->
+          </tbody>
+          <tfoot>
+            <tr>
+                <th colspan="4">Total:</th>
+                <th></th>
+                <th></th>
+            </tr>
+        </tfoot>
+        </table>
+      </div>
+    </div>
+    <!-- Dark table -->
+  </div>
+
+
+
+  <!-- Modal -->
+  <div class="modal fade" id="sessionModal" tabindex="-1" aria-labelledby="sessionModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered  modal-dialog-scrollable modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title text-danger"  id="sessionModalLabel">Session Details</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <table id="sessionDetailsTable" class="table table-bordered"style="width: 100%">
+            <div class="row">
+              <div class="col-md-2"><b>Session Id:</b></div>
+              <div class="col-md-5" id="modalSessionId"></div>
+              <div class="col-md-2"><b>IP Address:</b></div>
+              <div class="col-md-3" id="modalIpAddress"></div>
+          </div>
+            <hr>
+            <thead>
+              <tr>
+                <th>Query</th>
+                <th style=" white-space: normal;">Response</th>
+                <th>Token Used</th>
+                <th>Total Cost</th>
+              </tr>
+            </thead>
+            <tbody id="sessionDetailsBody">
+              <!-- Data will be populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% endblock content %}
+
+  <!-- Specific JS goes HERE -->
+  {% block javascripts %}
+  <script src="/static/assets/vendor/chart.js/dist/Chart.min.js"></script>
+  <script src="/static/assets/vendor/chart.js/dist/Chart.extension.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      var table=$('#chatHistory').DataTable({
+        "lengthMenu": [ [10, 25, 50, -1], [10, 25, 50, "All"] ],
+        "processing": true,
+        "serverSide": true,
+        buttons: [
+            
+            {
+                extend: 'excelHtml5',
+                text: 'Export Excel',
+                exportOptions: {
+                  columns: ':not(:last-child)' // Exclude the last column (Action column)
+              }
+            },
+            {
+              extend: 'pdfHtml5',
+              text: 'Export PDF',
+              exportOptions: {
+                columns: ':not(:last-child)' // Exclude the last column (Action column)
+            }
+          }
+        ],
+          "ajax": {
+                  "url": "{% url 'chatHistory' %}",
+                  "type": "POST",
+                  "data": function(d) {
+                      // Add date filter parameters to the AJAX request data
+                      d.fromDate = $('#from-date').val();
+                      d.toDate = $('#to-date').val();
+                      d.search = $('.dataTables_filter input').val();
+                    return d; 
+                  },
+                  "dataSrc": function(json) {
+                      // Modify the JSON data to handle nested rows for each response
+                      if (json && json.data && json.data.length > 0) {
+                        console.log(json)
+                        $('#daily_unique_users').text(json.unique_ips_today)
+                        if($('#from-date').val() == ''){
+                          $('#monthly_unique_users').text(json.unique_ips_current_month)
+                        }
+                        
+                        $('#frequecy_of_use').text(json.frequency_of_use)
+                        $('#average_tokens_per_ip').text(json.average_tokens_per_ip)
+                        $('#average_token_cost_per_user').text(json.average_token_cost_per_user)
+                        $('#user_retention_rate').text(json.user_retention_rate)
+                        return json.data;
+                    } else {
+                      $('#daily_unique_users').text(json.unique_ips_today)
+                      $('#monthly_unique_users').text(json.unique_ips_current_month)
+                      $('#frequecy_of_use').text(json.frequency_of_use)
+                      $('#average_tokens_per_ip').text(json.average_tokens_per_ip)
+                      $('#average_token_cost_per_user').text(json.average_token_cost_per_user)
+                      $('#user_retention_rate').text(json.user_retention_rate)
+                        // Show a message when no records are found
+                        $('#chatHistory tbody').html('<tr><td colspan="8" class="text-center">No records found</td></tr>');
+                        return [];
+                    }
+                  }
+              },
+              "columns": [
+                  { "data": "date" },
+                  { "data": "time" },
+                  {
+                      "data": "session_id",
+                      "render": function(data, type, row) {
+                          return `<a href="#" class="session-id-btn"  data-session_id="${data}" data-ip_address="${row.ip_address}">${data}</a>`;
+                      },
+                      
+                  },
+                  { "data": "ip_address" },
+                  { "data": "total_token_used" },
+                  { "data": "total_token_cost" },
+                  {
+                      "data": "session_id",
+                      "render": function(data, type, row) {
+                          return `<a href="#" class="btn btn-primary session-id-btn" data-session_id="${data}" data-ip_address="${row.ip_address}"><i class="fas fa-eye"></i></a>`;
+                      }
+                  }
+              ],
+              "searching": true,
+              "paging": true,
+              "regex" : true,
+              "lengthChange": true,
+              "ordering": false,
+              "info": true,
+              "autoWidth": true,
+              dom: 'Blfrtip',
+              "footerCallback": function (row, data, start, end, display) {                
+                //Get data here 
+                var api = this.api();
+
+                // Total for tokens_used column
+                var tokensUsedTotal = api.column(4, {page: 'current'}).data().reduce(function(acc, val) {
+                    return acc + parseFloat(val);
+                }, 0);
+    
+                // Total for tokens_cost column
+                var tokensCostTotal = api.column(5, {page: 'current'}).data().reduce(function(acc, val) {
+                    return acc + parseFloat(val);
+                }, 0);
+    
+                // Update footer
+                $(api.column(4).footer()).html(tokensUsedTotal.toFixed(2));
+                $(api.column(5).footer()).html(tokensCostTotal.toFixed(3));
+                }
+          });
+
+          // Datepicker initialization
+          $(".datepicker").datepicker({
+              dateFormat: 'yy-mm-dd',
+              defaultDate: new Date(), 
+              maxDate: 0,
+          });
+
+          // Filter button click event
+          $('#filter').click(function() {
+            if ($('#from-date').val() === '' || $('#to-date').val() === '') {
+              alert('Please select both From and To dates.');
+              return false; // Prevent form submission or further processing
+          }
+              var fromDate = $('#from-date').val();
+              var toDate = $('#to-date').val();
+              
+              table.ajax.url('{% url 'chatHistory' %}?fromDate=' + fromDate + '&toDate=' + toDate).load();
+          });
+
+          $('#resetBtn').click(function() {
+            $('.datepicker').val('');  // Clear datepicker value
+            var fromDate = $('#from-date').val();
+            var toDate = $('#to-date').val();
+            // Redraw the DataTable
+            table.ajax.url('{% url 'chatHistory' %}?fromDate=' + fromDate + '&toDate=' + toDate).load();
+        });
+      });
+
+        
+
+        $('#chatHistory').on('click', '.session-id-btn', function() {
+             // Get session_id from clicked button
+            let session_id = $(this).data('session_id'); // Get session_id from clicked button
+            let ip_address = $(this).data('ip_address'); // Get ip_address from clicked button
+            let sessionData = getSessionData(session_id,ip_address);
+        });
+
+        // Function to fetch session data based on session_id
+        function getSessionData(session_id,ip_address) {
+            let sessionData = [];
+            let csrfToken = $('[name="csrfmiddlewaretoken"]').val();
+            var settings = {
+                "url": "{% url 'sessionHistory' %}",
+                "method": "POST",
+                "timeout": 0,
+                "headers": {
+                  "Authorization": "token 8baa4ffcbc8a8cd3eef5f4ba36686b67a48d4465",
+                  "Content-Type": "application/json",
+                  'X-CSRFToken': csrfToken
+                },
+                "data": JSON.stringify({
+                  "session_id": session_id
+                }),
+              };
+              
+              $.ajax(settings)
+                .done(function (response) {
+
+                    $('#sessionDetailsBody').empty();
+                    let responses = response[0].responses;
+                    // Populate modal content with session details
+                    responses.forEach(function(data) {
+                        
+                        let row = '<tr>' +
+                            '<td>' + data.query + '</td>' +
+                            '<td style=" white-space: normal;">' + data.response + '</td>' +
+                            '<td>' + data.token_used + '</td>' +
+                            '<td>' + data.total_cost.toFixed(4) + '</td>' +
+                            '</tr>';
+                        $('#sessionDetailsBody').append(row);
+                    });
+                    // Set the session_id and IP address in the modal
+                    $('#modalSessionId').text(session_id);
+                    $('#modalIpAddress').text(ip_address);
+                    
+                    // Open modal
+                    $('#sessionModal').modal('show');
+                    // Call any function that needs to use sessionData here,
+                    // since this code block executes after the AJAX request completes.
+                   
+                })
+                .fail(function (jqXHR, textStatus, errorThrown) {
+                    console.error("Error fetching session data:", textStatus, errorThrown);
+                });
+        }
+  </script>
+  {% endblock javascripts %}
+</div>
