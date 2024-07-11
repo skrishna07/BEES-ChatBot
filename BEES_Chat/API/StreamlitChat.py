@@ -47,9 +47,11 @@ def main():
             st.session_state.session_id = api_response.get("session_id")
         if api_response.get("source"):
             if "https" not in api_response.get("source"):
-                chatbot_response = str(api_response.get("response"))+"\n\nsource - "+"https://biologicale.blob.core.windows.net/beesfiles/"+str(api_response.get("source"))
+                url = str(api_response.get("source")).replace(' ', '%20%')
+                chatbot_response = str(api_response.get(
+                    "response")) + "\n\nsource - " + f"https://biologicale.blob.core.windows.net/beesfiles{url}"
             else:
-                chatbot_response = str(api_response.get("response"))+"\n\nsource - "+str(api_response.get("source"))
+                chatbot_response = str(api_response.get("response")) + "\n\nsource - " + str(api_response.get("source"))
         else:
             chatbot_response = str(api_response.get("response"))
         st.session_state.chat_history.append(chatbot_response)
