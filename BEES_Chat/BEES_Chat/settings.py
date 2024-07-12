@@ -52,7 +52,11 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "Dashboard.middlewares.AutoLogout"
 ]
+
+# Auto logout delay in seconds (e.g., 1800 seconds = 30 minutes)
+AUTO_LOGOUT_DELAY = 1800
 
 ROOT_URLCONF = "BEES_Chat.urls"
 

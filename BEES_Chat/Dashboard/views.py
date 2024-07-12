@@ -28,6 +28,7 @@ History_container = database.get_container_client(os.getenv('WebChat_History_Con
 # Create your views here.
 @guest
 def loginPage(request):
+    
     # return render(request,'login.html')
     if  request.method =='POST':
         form=AuthenticationForm(data=request.POST)
@@ -78,22 +79,59 @@ def signupPage(request):
                 return JsonResponse({'status': 400, 'errors': errors})
             
     else:
-        intialData={'username':"", 'email':"",'role':"", 'password1':"","password2":""}
-        form = UserRegistrationForm(initial=intialData)
-    return render(request, 'user_management.html',{'form':form}) 
-   
+        if request.user.is_authenticated:
+        # Fetch all groups associated with the user
+            user_groups = request.user.groups.all()
+            user_is_admin = user_groups.filter(name='Admin').exists()
+            # Pass user_is_admin and other necessary data to the template
+            intialData={'username':"", 'email':"",'role':"", 'password1':"","password2":""}
+            form = UserRegistrationForm(initial=intialData)
+
+            return render(request, 'user_management.html', {'form':form,'user_is_admin': user_is_admin})
+        else:
+            # Handle the case where the user is not authenticated
+            # Redirect to login or handle appropriately
+            return HttpResponse("You are not authenticated.")
     
 @login_required    
 def dashboard(request):
-    return render(request,'dashboard.html')  
+    if request.user.is_authenticated:
+        # Fetch all groups associated with the user
+        user_groups = request.user.groups.all()
+        user_is_admin = user_groups.filter(name='Admin').exists()
+        # Pass user_is_admin and other necessary data to the template
+        return render(request, 'dashboard.html', {'user_is_admin': user_is_admin})
+    else:
+        # Handle the case where the user is not authenticated
+        # Redirect to login or handle appropriately
+        return HttpResponse("You are not authenticated.")
+    
 
 @login_required    
 def userEngagement(request):
-    return render(request,'user_engagement.html')  
+    if request.user.is_authenticated:
+        # Fetch all groups associated with the user
+        user_groups = request.user.groups.all()
+        user_is_admin = user_groups.filter(name='Admin').exists()
+        # Pass user_is_admin and other necessary data to the template
+        return render(request, 'user_engagement.html', {'user_is_admin': user_is_admin})
+    else:
+        # Handle the case where the user is not authenticated
+        # Redirect to login or handle appropriately
+        return HttpResponse("You are not authenticated.")
 
 @login_required    
 def sessionAnalytics(request):
-    return render(request,'session_analytics.html')  
+    if request.user.is_authenticated:
+        # Fetch all groups associated with the user
+        user_groups = request.user.groups.all()
+        user_is_admin = user_groups.filter(name='Admin').exists()
+        # Pass user_is_admin and other necessary data to the template
+        return render(request, 'session_analytics.html', {'user_is_admin': user_is_admin})
+    else:
+        # Handle the case where the user is not authenticated
+        # Redirect to login or handle appropriately
+        return HttpResponse("You are not authenticated.")
 
 
 @django.views.decorators.csrf.csrf_exempt
@@ -197,15 +235,9 @@ def getChatHistory(request):
         total_unique_ips = 0
         total_token_cost = 0.0
         total_sessions = 0
-
-        print("201")
-        # cohort_start = from_date if from_date_str else sorted_results[-1]['datetime']
-        # cohort_start = datetime.strptime(cohort_start, '%Y-%m-%d %H:%M:%S.%f').date()
-        # cohort_end = cohort_start + timedelta(days=1)
+        
         cohort_ips = set()
         
-        # print("cohort_start", cohort_start)
-        # print("cohort_end", cohort_end)
         returning_ips = set()
 
         for row in sorted_results:
@@ -337,8 +369,8 @@ def getChatHistory(request):
         frequency_of_use = total_sessions / unique_ips_count if unique_ips_count else 0
         frequency_of_use = round(frequency_of_use, 2)
         
-        print("first_access_by_ip", first_access_by_ip)
-        print("first_access_by_ip length", len(first_access_by_ip))
+        # print("first_access_by_ip", first_access_by_ip)
+        # print("first_access_by_ip length", len(first_access_by_ip))
          # Calculate retention rate
         returning_ips = set()
         for row in sorted_results:
