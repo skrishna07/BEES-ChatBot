@@ -60,7 +60,10 @@ def main():
         if i % 2 == 0:
             st.chat_message('user').write(msg)
         else:
-            st.chat_message('assistant').write(msg)
+            if "<table>" in msg:
+                st.markdown(msg, unsafe_allow_html=True)
+            else:
+                st.chat_message('assistant').markdown(f'{msg}')
 
 
 if __name__ == "__main__":
