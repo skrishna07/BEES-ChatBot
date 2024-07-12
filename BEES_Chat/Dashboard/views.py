@@ -8,6 +8,7 @@ from datetime import datetime,timedelta
 from collections import defaultdict
 import json
 import time
+import pytz
 import django.views.decorators.csrf
 # from django.contrib.auth import get_user_model
 import os
@@ -164,6 +165,18 @@ def getChatHistory(request):
                 query_str += f" AND c.datetime < '{to_date.isoformat()}'"
             except ValueError:
                 pass
+        
+        # If from_date is not set, set it to 7 days before the current date
+        if not from_date_str:
+            from_date = datetime.now() - timedelta(days=7)
+            from_date = from_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            query_str += f" AND c.datetime >= '{from_date.isoformat()}'"
+
+        # If to_date is not set, set it to the current date
+        if not to_date_str:
+            to_date = datetime.now()
+            to_date = to_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            query_str += f" AND c.datetime < '{to_date.isoformat()}'"
 
         # Check if search value is provided in the request
         search = request.POST.get('search', None)
@@ -173,7 +186,24 @@ def getChatHistory(request):
 
         # Query the database with the constructed SQL query
         results = list(History_container.query_items(query=query_str, enable_cross_partition_query=True))
-      
+
+        # Get the current date and time in UTC (adjust timezone if needed)
+        now = datetime.now(pytz.utc)
+        current_year_month = now.strftime('%Y-%m')
+
+        # Construct the query to get unique IPs for the current month
+        ip_query_str = f"""
+        SELECT DISTINCT c.ip_address FROM c 
+        WHERE STARTSWITH(c.datetime, '{current_year_month}')
+        """
+
+        
+        # Execute the query
+        ip_results = list(History_container.query_items(query=ip_query_str, enable_cross_partition_query=True))
+
+        # Print or process the results
+        distict_ips = [item['ip_address'] for item in ip_results]
+        
         if not results:
             return JsonResponse({
                 'draw': request.POST.get('draw'),
@@ -285,11 +315,10 @@ def getChatHistory(request):
 
             # Track monthly unique users
             if ip_address:
-                if from_date_str:
-                    month_from_date = from_date.strftime('%Y-%m')
-                    # print("month_from_date", month_from_date)
-                    # print("month_part", month_part)
-                    if month_from_date == month_part:
+                if to_date_str:
+                    month_to_date = to_date.strftime('%Y-%m')
+
+                    if month_to_date == month_part:
                         unique_ips_current_month.add(ip_address)
                 elif month_part == current_month:
                     unique_ips_current_month.add(ip_address)
@@ -297,7 +326,7 @@ def getChatHistory(request):
             # Track unique sessions by IP
             ip_address = row.get('ip_address')
             session_id = row.get('session_id')
-            if ip_address and session_id:
+            if  session_id:
                 if session_id not in sessions_by_ip[ip_address]:
                     sessions_by_ip[ip_address].add(session_id)
                     total_sessions += 1
@@ -306,7 +335,7 @@ def getChatHistory(request):
                 # Track first access date by IP
                 if ip_address not in first_access_by_ip or dt < first_access_by_ip[ip_address]:
                     first_access_by_ip[ip_address] = dt
-
+            
             # Calculate the number of unique IPs
             total_unique_ips = len(unique_ips)
             # Calculate average sessions per IP
@@ -314,7 +343,6 @@ def getChatHistory(request):
 
             # Print or return the result
             average_sessions_per_ip = round(average_sessions_per_ip, 2)
-            # print("Average Sessions per IP:", average_sessions_per_ip)
         
             # Calculate average tokens per IP
             average_tokens_per_ip = total_tokens_used / total_unique_ips if total_unique_ips else 0
@@ -369,8 +397,6 @@ def getChatHistory(request):
         frequency_of_use = total_sessions / unique_ips_count if unique_ips_count else 0
         frequency_of_use = round(frequency_of_use, 2)
         
-        # print("first_access_by_ip", first_access_by_ip)
-        # print("first_access_by_ip length", len(first_access_by_ip))
          # Calculate retention rate
         returning_ips = set()
         for row in sorted_results:
@@ -381,8 +407,6 @@ def getChatHistory(request):
             if ip_address and ip_address in first_access_by_ip and dt > first_access_by_ip[ip_address]:
                 returning_ips.add(ip_address)
 
-        print("returning_ips", returning_ips)
-        print("returning_ips length", len(returning_ips))
         retention_rate = (len(returning_ips) / len(first_access_by_ip)) * 100 if first_access_by_ip else 0
         retention_rate = round(retention_rate, 2)
 
@@ -394,7 +418,7 @@ def getChatHistory(request):
             'data': list(result),
             'unique_sessions_count': len(unique_sessions),
             'daily_unique_ips': daily_unique_users_count,
-            'monthly_unique_ips': {str(month): len(users) for month, users in monthly_unique_ips.items()},
+            'monthly_unique_ips': len(distict_ips),
             'monthly_unique_ips_count': len(monthly_unique_ips),
             'unique_ips_today': len(unique_ips_today),
             'unique_ips_current_month': len(unique_ips_current_month),

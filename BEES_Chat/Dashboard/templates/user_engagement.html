@@ -34,7 +34,7 @@
               <div class="card-body">
                 <div class="row">
                   <div class="col">
-                    <h6 class="card-title text-uppercase text-muted mb-0">Daily Unique Users</h6>
+                    <h6 class="card-title text-uppercase text-muted mb-0">Distinct Users Today</h6>
                     <span class="h2 font-weight-bold mb-0" id="daily_unique_users"></span>
                   </div>
                   <div class="col-auto">
@@ -229,10 +229,11 @@
                       // Modify the JSON data to handle nested rows for each response
                       if (json && json.data && json.data.length > 0) {
                         console.log(json)
-                        $('#daily_unique_users').text(json.unique_ips_today)
-                        if($('#from-date').val() == ''){
-                          $('#monthly_unique_users').text(json.unique_ips_current_month)
-                        }
+                          if($('#from-date').val() == ''){
+                            $('#daily_unique_users').text(json.unique_ips_today)
+                          }
+                          $('#monthly_unique_users').text(json.monthly_unique_ips)
+                       
                         
                         $('#frequecy_of_use').text(json.frequency_of_use)
                         $('#average_tokens_per_ip').text(json.average_tokens_per_ip)
