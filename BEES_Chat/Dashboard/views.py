@@ -58,7 +58,7 @@ def signupPage(request):
                 user.role = request.POST.get('role')  # Assuming 'role' is a field in a related 'Profile' model
                 user.status = request.POST.get('status') == 'true'  # Assuming 'status' is a boolean field
                 user.save()
-                return HttpResponse({'status':200}) 
+                return JsonResponse({'status': 200, 'message': 'User updated successfully'})
             except User.DoesNotExist:
                 return HttpResponseBadRequest("User does not exist")
             except Exception as e:
