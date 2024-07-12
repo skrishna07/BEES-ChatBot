@@ -20,7 +20,11 @@ urlpatterns = [
     path('login/',views.loginPage,name='login'),
     path('register/',views.signupPage,name='register'),
     path('dashboard/',views.dashboard,name='dashboard'),
+    path('userEngagement/',views.userEngagement,name='userEngagement'),
+    path('sessionAnalytics/',views.sessionAnalytics,name='sessionAnalytics'),
     path('logout/',views.logoutFuntion,name='logout'),
     path('chatHistory/',views.getChatHistory,name='chatHistory'),
     path('sessionHistory/',views.get_session_details,name='sessionHistory'),
+    path('getUserData/',views.getUserData,name='getUserData'),
+    path('delete_user/', views.delete_user, name='delete_user'),
 ]
