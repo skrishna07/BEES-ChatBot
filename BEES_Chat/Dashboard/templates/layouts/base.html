@@ -35,7 +35,7 @@
   <!-- Page plugins -->
   <!-- Argon CSS -->
   <link rel="stylesheet" href="/static/assets/css/argon.css?v=1.2.0" type="text/css">
-
+  
   <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet"/>
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/jquery.dataTables.css"/>
 <!-- Buttons CSS -->
@@ -104,7 +104,51 @@
 
     {% include "includes/navigation.html" %}
 
-    {% block content %}{% endblock content %}
+<!--Session Details Modal Start-->
+  <div class="modal fade" id="sessionModal" tabindex="-1" aria-labelledby="sessionModalLabel"
+  aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered  modal-dialog-scrollable modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-danger"  id="sessionModalLabel">Session Details</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <table id="sessionDetailsTable" class="table table-bordered"style="width: 100%">
+          <div class="row">
+            <div class="col-md-2"><b class="text text-primary">Session Id:</b></div>
+            <div class="col-md-5" id="modalSessionId"></div>
+            <div class="col-md-2"><b class="text text-primary">IP Address:</b></div>
+            <div class="col-md-3" id="modalIpAddress"></div>
+        </div>
+          <hr>
+          <thead>
+            <tr>
+              <th>Query</th>
+              <th style=" white-space: normal;">Response</th>
+              <th>Token Used</th>
+              <th>Total Cost</th>
+            </tr>
+          </thead>
+          <tbody id="sessionDetailsBody">
+            <!-- Data will be populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<!--Session Details Modal Ends-->
+    {% block content %}
+
+    {% endblock content %}
 
   </div>
 
