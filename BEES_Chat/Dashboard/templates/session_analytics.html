@@ -93,9 +93,9 @@
           
         <div class="mt-3 ml-3">
           <label for="from-date">From: </label>
-          <input type="text" id="from-date" class="datepicker" required/>
+          <input type="text" id="from-date" class="datepicker" value="{{ dates.seven_days_ago }}"/>
           <label for="to-date">To: </label>
-          <input type="text" id="to-date" class="datepicker" required/>
+          <input type="text" id="to-date" class="datepicker" value="{{ dates.today }}"/>
           <button class="btn btn-success" id="filter">Filter</button>
           <button class="btn btn-danger" id="resetBtn">Reset</button>
         </div>
@@ -137,6 +137,7 @@
   <script src="/static/assets/vendor/chart.js/dist/Chart.min.js"></script>
   <script src="/static/assets/vendor/chart.js/dist/Chart.extension.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
   <script>
     $(document).ready(function() {
       var table=$('#chatHistory').DataTable({
@@ -236,30 +237,7 @@
                 }
           });
 
-          // Datepicker initialization
-          $(".datepicker").datepicker({
-              dateFormat: 'yy-mm-dd'
-          });
-
-          // Filter button click event
-          $('#filter').click(function() {
-            if ($('#from-date').val() === '' || $('#to-date').val() === '') {
-              alert('Please select both From and To dates.');
-              return false; // Prevent form submission or further processing
-          }
-              var fromDate = $('#from-date').val();
-              var toDate = $('#to-date').val();
-              
-              table.ajax.url('{% url 'chatHistory' %}?fromDate=' + fromDate + '&toDate=' + toDate).load();
-          });
-
-          $('#resetBtn').click(function() {
-            $('.datepicker').val('');  // Clear datepicker value
-            var fromDate = $('#from-date').val();
-            var toDate = $('#to-date').val();
-            // Redraw the DataTable
-            table.ajax.url('{% url 'chatHistory' %}?fromDate=' + fromDate + '&toDate=' + toDate).load();
-        });
+         
       });
         
 

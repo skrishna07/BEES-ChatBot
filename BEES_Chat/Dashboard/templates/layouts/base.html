@@ -37,6 +37,8 @@
   <link rel="stylesheet" href="/static/assets/css/argon.css?v=1.2.0" type="text/css">
   
   <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/jquery.dataTables.css"/>
 <!-- Buttons CSS -->
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/1.7.0/css/buttons.dataTables.min.css">
@@ -55,7 +57,7 @@
 <!-- PDFMake JS -->
 <script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
 <script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
   <style>
     .dt-button {
       background-color: #007bff !important; /* Change to your desired color */
@@ -104,6 +106,8 @@
 
     {% include "includes/navigation.html" %}
 
+    <input type="hidden" id="current_date" value="{{ dates.today }}"> 
+    <input type="hidden" id="previous_date" value="{{ dates.seven_days_ago }}">
 <!--Session Details Modal Start-->
   <div class="modal fade" id="sessionModal" tabindex="-1" aria-labelledby="sessionModalLabel"
   aria-hidden="true">
@@ -154,10 +158,60 @@
 
   {% include "includes/scripts.html" %}
 
+  
   <!-- Specific JS goes HERE --> 
   {% block javascripts %}{% endblock javascripts %}
+  <script>
+    $(document).ready(function() {
+      
+      // Datepicker initialization
+      $(".datepicker").datepicker({
+        dateFormat: 'yy-mm-dd',
+        defaultDate: new Date(), 
+        maxDate: 0,
+      });
 
+      
+      // Filter button click event
+      $('#filter').click(function() {
+        if ($('#from-date').val() === '' && $('#to-date').val() === '') {
+          alert('Please select both From and To dates.');
+          return false; // Prevent form submission or further processing
+        }
+        else if ($('#from-date').val() === ''){
+          alert('Please select both From date.');
+        }
+        else if ($('#to-date').val() === ''){
+          alert('Please select To date.');
+        }
+        else{
+          var fromDate = $('#from-date').val();
+          var toDate = $('#to-date').val();
+          
+            $('#chatHistory').DataTable().ajax.url('{% url 'chatHistory' %}?fromDate=' + fromDate + '&toDate=' + toDate).load();
+          }
+        });
+
+      $('#resetBtn').click(function() {
+       
+        $('.datepicker').val('');
+        var currentDate=$('#current_date').val()
+        var previousDate=$('#previous_date').val()
+
+        // Set the datepicker values
+        $('#from-date').datepicker('setDate', previousDate);
+        $('#to-date').datepicker('setDate', currentDate);
+          // Clear datepicker value
+        var fromDate = $('#from-date').val();
+        var toDate = $('#to-date').val();
+        // Redraw the DataTable
+        $('#chatHistory').DataTable().ajax.url('{% url 'chatHistory' %}?fromDate=' + fromDate + '&toDate=' + toDate).load();
+    }); 
+    })
+  </script>
   <script src="/static/assets/js/argon.js?v=1.2.0"></script>
+  
+  
 
 </body>
 

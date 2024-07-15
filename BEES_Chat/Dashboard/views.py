@@ -8,7 +8,6 @@ from datetime import datetime,timedelta
 from collections import defaultdict
 import json
 import time
-import pytz
 import django.views.decorators.csrf
 # from django.contrib.auth import get_user_model
 import os
@@ -30,11 +29,9 @@ History_container = database.get_container_client(os.getenv('WebChat_History_Con
 @guest
 def loginPage(request):
     
-    # return render(request,'login.html')
     if  request.method =='POST':
         form=AuthenticationForm(data=request.POST)
         
-        print("Form data:", request.POST)
         if form.is_valid():
             user = form.get_user()
             login(request,user)
@@ -51,7 +48,6 @@ def signupPage(request):
         user_id = request.POST.get('userId', None)
         
         if user_id:
-            print("user_id", request.POST)
             # Update user details
             try:
                 user = get_object_or_404(User, id=user_id)
@@ -67,7 +63,6 @@ def signupPage(request):
                 return HttpResponseBadRequest(f"An error occurred: {str(e)}")
 
         else:
-            print("data", request.POST)
             form = UserRegistrationForm(request.POST)
             if form.is_valid():
                 # Stop code execution (for debugging purposes)
@@ -100,8 +95,16 @@ def dashboard(request):
         # Fetch all groups associated with the user
         user_groups = request.user.groups.all()
         user_is_admin = user_groups.filter(name='Admin').exists()
+
+        today = datetime.now().date().strftime('%m/%d/%Y')
+        seven_days_ago = (datetime.now().date() - timedelta(days=7)).strftime('%m/%d/%Y')
+        dates = {
+            'today': today,
+            'seven_days_ago': seven_days_ago
+        }
+
         # Pass user_is_admin and other necessary data to the template
-        return render(request, 'dashboard.html', {'user_is_admin': user_is_admin})
+        return render(request, 'dashboard.html', {'user_is_admin': user_is_admin,'dates':dates})
     else:
         # Handle the case where the user is not authenticated
         # Redirect to login or handle appropriately
@@ -114,8 +117,15 @@ def userEngagement(request):
         # Fetch all groups associated with the user
         user_groups = request.user.groups.all()
         user_is_admin = user_groups.filter(name='Admin').exists()
+
+        today = datetime.now().date().strftime('%m/%d/%Y')
+        seven_days_ago = (datetime.now().date() - timedelta(days=7)).strftime('%m/%d/%Y')
+        dates = {
+            'today': today,
+            'seven_days_ago': seven_days_ago
+        }
         # Pass user_is_admin and other necessary data to the template
-        return render(request, 'user_engagement.html', {'user_is_admin': user_is_admin})
+        return render(request, 'user_engagement.html', {'user_is_admin': user_is_admin,'dates':dates})
     else:
         # Handle the case where the user is not authenticated
         # Redirect to login or handle appropriately
@@ -127,8 +137,15 @@ def sessionAnalytics(request):
         # Fetch all groups associated with the user
         user_groups = request.user.groups.all()
         user_is_admin = user_groups.filter(name='Admin').exists()
+
+        today = datetime.now().date().strftime('%m/%d/%Y')
+        seven_days_ago = (datetime.now().date() - timedelta(days=7)).strftime('%m/%d/%Y')
+        dates = {
+            'today': today,
+            'seven_days_ago': seven_days_ago
+        }
         # Pass user_is_admin and other necessary data to the template
-        return render(request, 'session_analytics.html', {'user_is_admin': user_is_admin})
+        return render(request, 'session_analytics.html', {'user_is_admin': user_is_admin,'dates':dates})
     else:
         # Handle the case where the user is not authenticated
         # Redirect to login or handle appropriately
@@ -154,12 +171,13 @@ def getChatHistory(request):
                 query_str += f" AND c.datetime >= '{from_date.isoformat()}'"
             except ValueError:
                 pass
-
+        
         # Check if toDate is provided in the request
         to_date_str = request.GET.get('toDate', None)
         if to_date_str:
             try:
                 to_date = datetime.strptime(to_date_str, '%m/%d/%Y')
+                current_month = to_date.strftime('%Y-%m')
                 # Adjust to_date to include the start of the next day
                 to_date = to_date.replace(hour=0, minute=0, second=0, microsecond=0)
                 query_str += f" AND c.datetime < '{to_date.isoformat()}'"
@@ -187,16 +205,11 @@ def getChatHistory(request):
         # Query the database with the constructed SQL query
         results = list(History_container.query_items(query=query_str, enable_cross_partition_query=True))
 
-        # Get the current date and time in UTC (adjust timezone if needed)
-        now = datetime.now(pytz.utc)
-        current_year_month = now.strftime('%Y-%m')
-
         # Construct the query to get unique IPs for the current month
         ip_query_str = f"""
         SELECT DISTINCT c.ip_address FROM c 
-        WHERE STARTSWITH(c.datetime, '{current_year_month}')
+        WHERE STARTSWITH(c.datetime, '{current_month}')
         """
-
         
         # Execute the query
         ip_results = list(History_container.query_items(query=ip_query_str, enable_cross_partition_query=True))
