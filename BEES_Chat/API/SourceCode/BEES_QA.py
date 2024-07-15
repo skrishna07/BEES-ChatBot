@@ -1,6 +1,6 @@
 import collections
 import re
-
+from difflib import SequenceMatcher
 import langchain.chains.combine_documents
 import langchain.chains.history_aware_retriever
 import langchain.chains.retrieval
@@ -14,6 +14,8 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 from .Log import Logger
 
 from dotenv import load_dotenv
@@ -27,6 +29,12 @@ def get_session_history(session_id: str) -> BaseChatMessageHistory:
     if session_id not in store:
         store[session_id] = ChatMessageHistory()
     return store[session_id]
+
+
+def text_similarity(a, b):
+    vectorizer = TfidfVectorizer().fit_transform([a, b])
+    vectors = vectorizer.toarray()
+    return cosine_similarity(vectors)[0, 1]
 
 
 # Load environment variables from .env file
@@ -101,11 +109,13 @@ contextualize_q_prompt = ChatPromptTemplate.from_messages(
         ("human", "{input}"),
     ]
 )
+
 llm = AzureChatOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
     azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
     openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"), temperature=0.5, max_tokens=500
 )
+
 history_aware_retriever = langchain.chains.history_aware_retriever.create_history_aware_retriever(
     llm, qa_retriever, contextualize_q_prompt)
 
@@ -214,6 +224,8 @@ def AzureCosmosQA(human, session_id):
             print(context)
             print("\n")
             print(response["answer"])
+            similarity = text_similarity(str(context), str(response["answer"]))
+            print(similarity)
             print("\n\n\n")
             response = response["answer"]
             if source_links:
@@ -221,6 +233,10 @@ def AzureCosmosQA(human, session_id):
             else:
                 source_link = ''
                 response = "The answer is not available in the provided context."
+            if "<table>" not in response:
+                if similarity < 0.1:
+                    source_link = ''
+                    response = "The answer is not available in the provided context."
             source_link = re.sub(r'.*Files', '', source_link)
             response, source_link = post_process_answer(str(context), response, source_link)
             print(f"Total Tokens: {cb.total_tokens}")
