@@ -279,8 +279,6 @@ def getChatHistory(request):
         total_token_cost = 0.0
         total_sessions = 0
         
-        cohort_ips = set()
-        
         returning_ips = set()
 
         for row in sorted_results:
@@ -304,14 +302,6 @@ def getChatHistory(request):
             # Track monthly unique users
             if ip_address:
                 monthly_unique_ips[month_part].add(ip_address)
-
-            # Track unique IPs for today and the current month
-            if from_date_str and to_date_str:
-                if from_date.date() <= date_part <= to_date.date() and ip_address:
-                    unique_ips_today.add(ip_address)
-            else:
-                if date_part == today and ip_address:
-                    unique_ips_today.add(ip_address)
 
             # Calculate total tokens used per row
             totalTokenUsed = 0
