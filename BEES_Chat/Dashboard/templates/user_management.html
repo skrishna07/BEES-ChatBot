@@ -293,7 +293,15 @@
   
           // Remove validation error messages
           $(this).find('.error').text('');
-      });
+        });
+
+        $('#userModal').on('hidden.bs.modal', function () {
+          // Remove validation error messages
+          // Clear error messages
+          $('#editUserForm').find('.error').remove();
+           // Remove is-invalid class from all form fields
+          $('#editUserForm').find('.form-control').removeClass('is-invalid');
+        });
 
         // Function to fetch session data based on session_id
         $(document).on('click', '.edit-btn', function() {
@@ -368,8 +376,6 @@
 
        $('#saveUserDetails').on('click', function() {
         // Get form data
-        
-        
         if($("#editUserForm").valid()) {
           // Form is valid, proceed with form submission or AJAX call
           var formData = {
@@ -404,14 +410,21 @@
                 // Reload DataTable data
               },
               error: function(error) {
-                  console.log(error)
+                  console.log(error.responseText)
                   // Handle error response
-                  alert('Error updating user details');
+                  if (error.responseText.includes("UNIQUE constraint failed: Dashboard_user.username")) {
+                    $('#username_e_error').text('Username already exists')
+                  } else if(error.responseText.includes("UNIQUE constraint failed: Dashboard_user.email")) {
+                    
+                    $('#email_e_error').text('Email already exists')
+                  }
+                  else{
+                    alert('Error updating user details');
+                  }
+                  
               }
           });
         }
-
-        
     });
     
     $(document).on('click', '#createUser', function() {
@@ -450,9 +463,6 @@
                   
               }
           });
-            
-              
-            
         });
     })
     
