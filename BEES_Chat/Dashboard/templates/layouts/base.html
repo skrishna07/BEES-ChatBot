@@ -189,11 +189,16 @@
               responses.forEach(function(data) {
                   console.log(data)
                   let row = '<tr>' +
-                      '<td style="width: 30%; word-wrap: break-word;white-space: normal;">' + data.query + '</td>' +
-                      '<td style="width: 50%; white-space: normal;">' + data.response + ' | <b>Source</b> : '+data.source+'</td>' +
-                      '<td style="width: 20%;">' + data.token_used + '</td>' +
-                      '<td style="width: 20%;">' + data.total_cost.toFixed(4) + '</td>' +
-                      '</tr>';
+                    '<td style="width: 30%; word-wrap: break-word; white-space: normal;">' + data.query + '</td>' +
+                    '<td style="width: 50%; white-space: normal;">' + data.response + 
+                        ' | <b>Source</b> : ' +
+                        '<a href="https://biologicale.blob.core.windows.net/beesfiles/' + data.source + '" target="_blank">' + 
+                        data.source + 
+                        '</a>' +
+                    '</td>' +
+                    '<td style="width: 20%;">' + data.token_used + '</td>' +
+                    '<td style="width: 20%;">' + data.total_cost.toFixed(4) + '</td>' +
+                    '</tr>';
                   $('#sessionDetailsBody').append(row);
               });
               // Set the session_id and IP address in the modal

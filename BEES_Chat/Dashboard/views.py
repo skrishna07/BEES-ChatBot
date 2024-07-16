@@ -218,7 +218,7 @@ def getChatHistory(request):
         search = request.POST.get('search', None)
         if search:
             # Add search functionality for ip_address and session_id
-            query_str += f" AND (CONTAINS(c.ip_address, '{search}') OR CONTAINS(c.session_id, '{search}'))"
+            query_str += f" AND (CONTAINS(c.ip_address, '{search}') OR CONTAINS(c.session_id, '{search}') OR CONTAINS(c.datetime, '{search}'))"
 
         # Query the database with the constructed SQL query
         results = list(History_container.query_items(query=query_str, enable_cross_partition_query=True))
