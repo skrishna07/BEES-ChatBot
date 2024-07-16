@@ -283,6 +283,7 @@ def getChatHistory(request):
         
         # Track unique IPs for today and the current month
         unique_ips_today = set()
+        
         unique_ips_current_month = set()
 
         # Initialize variables
@@ -316,11 +317,12 @@ def getChatHistory(request):
             # Track unique users daily
             if ip_address and date_part == today:
                 unique_ips_today.add(ip_address)
-
+            
+            
             # Track monthly unique users
             if ip_address:
                 monthly_unique_ips[month_part].add(ip_address)
-
+                
              # Track unique IPs for today and the current month
             if date_part == today and row['ip_address']:
                 unique_ips_today.add(row['ip_address'])
@@ -419,10 +421,10 @@ def getChatHistory(request):
                 'total_token_used': totalTokenUsed,
                 'total_token_cost': totalTokenCost
             })
-
+        
         # Calculate frequency of use
         total_sessions = len(results)
-        unique_ips_count = len(unique_ips_today) if from_date_str or to_date_str else len(set(row['ip_address'] for row in results if row['ip_address']))
+        unique_ips_count = len(unique_ips) if from_date_str or to_date_str else len(set(row['ip_address'] for row in results if row['ip_address']))
         frequency_of_use = total_sessions / unique_ips_count if unique_ips_count else 0
         frequency_of_use = round(frequency_of_use, 2)
         
