@@ -1,14 +1,14 @@
 from django.shortcuts import render,redirect,HttpResponse,get_object_or_404
 from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth import login,logout
+from django.contrib.auth import login,logout,authenticate
 from .middlewares import auth,guest
+from django.contrib.auth.models import Group
 from django.contrib.auth.decorators import login_required
 from .forms import UserRegistrationForm
 from datetime import datetime,timedelta
 from collections import defaultdict
 import json
 import time
-import pytz
 import django.views.decorators.csrf
 # from django.contrib.auth import get_user_model
 import os
@@ -30,11 +30,9 @@ History_container = database.get_container_client(os.getenv('WebChat_History_Con
 @guest
 def loginPage(request):
     
-    # return render(request,'login.html')
     if  request.method =='POST':
         form=AuthenticationForm(data=request.POST)
         
-        print("Form data:", request.POST)
         if form.is_valid():
             user = form.get_user()
             login(request,user)
@@ -51,14 +49,13 @@ def signupPage(request):
         user_id = request.POST.get('userId', None)
         
         if user_id:
-            print("user_id", request.POST)
             # Update user details
             try:
                 user = get_object_or_404(User, id=user_id)
                 user.username = request.POST.get('username')
                 user.email = request.POST.get('email')
                 user.role = request.POST.get('role')  # Assuming 'role' is a field in a related 'Profile' model
-                user.status = request.POST.get('status') == 'true'  # Assuming 'status' is a boolean field
+                user.is_active = request.POST.get('status') == 'true'  # Assuming 'status' is a boolean field
                 user.save()
                 return JsonResponse({'status': 200, 'message': 'User updated successfully'})
             except User.DoesNotExist:
@@ -67,12 +64,20 @@ def signupPage(request):
                 return HttpResponseBadRequest(f"An error occurred: {str(e)}")
 
         else:
-            print("data", request.POST)
             form = UserRegistrationForm(request.POST)
             if form.is_valid():
+                
                 # Stop code execution (for debugging purposes)
                 # sys.exit()
                 user=form.save()
+                # Assign user to a specific group based on role
+                if user.role == 'admin':
+                    group = Group.objects.get(name='Admin')
+                elif user.role == 'user':
+                    group = Group.objects.get(name='User')
+
+                user.groups.add(group)
+
                 token = Token.objects.create(user=user)
                 return JsonResponse({'status': 200, 'message': 'User created successfully'})
             else:
@@ -100,8 +105,16 @@ def dashboard(request):
         # Fetch all groups associated with the user
         user_groups = request.user.groups.all()
         user_is_admin = user_groups.filter(name='Admin').exists()
+
+        today = datetime.now().date().strftime('%m/%d/%Y')
+        seven_days_ago = (datetime.now().date() - timedelta(days=6  )).strftime('%m/%d/%Y')
+        dates = {
+            'today': today,
+            'seven_days_ago': seven_days_ago
+        }
+
         # Pass user_is_admin and other necessary data to the template
-        return render(request, 'dashboard.html', {'user_is_admin': user_is_admin})
+        return render(request, 'dashboard.html', {'user_is_admin': user_is_admin,'dates':dates})
     else:
         # Handle the case where the user is not authenticated
         # Redirect to login or handle appropriately
@@ -114,8 +127,15 @@ def userEngagement(request):
         # Fetch all groups associated with the user
         user_groups = request.user.groups.all()
         user_is_admin = user_groups.filter(name='Admin').exists()
+
+        today = datetime.now().date().strftime('%m/%d/%Y')
+        seven_days_ago = (datetime.now().date() - timedelta(days=6)).strftime('%m/%d/%Y')
+        dates = {
+            'today': today,
+            'seven_days_ago': seven_days_ago
+        }
         # Pass user_is_admin and other necessary data to the template
-        return render(request, 'user_engagement.html', {'user_is_admin': user_is_admin})
+        return render(request, 'user_engagement.html', {'user_is_admin': user_is_admin,'dates':dates})
     else:
         # Handle the case where the user is not authenticated
         # Redirect to login or handle appropriately
@@ -127,8 +147,15 @@ def sessionAnalytics(request):
         # Fetch all groups associated with the user
         user_groups = request.user.groups.all()
         user_is_admin = user_groups.filter(name='Admin').exists()
+
+        today = datetime.now().date().strftime('%m/%d/%Y')
+        seven_days_ago = (datetime.now().date() - timedelta(days=6)).strftime('%m/%d/%Y')
+        dates = {
+            'today': today,
+            'seven_days_ago': seven_days_ago
+        }
         # Pass user_is_admin and other necessary data to the template
-        return render(request, 'session_analytics.html', {'user_is_admin': user_is_admin})
+        return render(request, 'session_analytics.html', {'user_is_admin': user_is_admin,'dates':dates})
     else:
         # Handle the case where the user is not authenticated
         # Redirect to login or handle appropriately
@@ -154,12 +181,13 @@ def getChatHistory(request):
                 query_str += f" AND c.datetime >= '{from_date.isoformat()}'"
             except ValueError:
                 pass
-
+        
         # Check if toDate is provided in the request
         to_date_str = request.GET.get('toDate', None)
         if to_date_str:
             try:
                 to_date = datetime.strptime(to_date_str, '%m/%d/%Y')
+                current_month = to_date.strftime('%Y-%m')
                 # Adjust to_date to include the start of the next day
                 to_date = to_date.replace(hour=0, minute=0, second=0, microsecond=0)
                 query_str += f" AND c.datetime < '{to_date.isoformat()}'"
@@ -187,16 +215,11 @@ def getChatHistory(request):
         # Query the database with the constructed SQL query
         results = list(History_container.query_items(query=query_str, enable_cross_partition_query=True))
 
-        # Get the current date and time in UTC (adjust timezone if needed)
-        now = datetime.now(pytz.utc)
-        current_year_month = now.strftime('%Y-%m')
-
         # Construct the query to get unique IPs for the current month
         ip_query_str = f"""
         SELECT DISTINCT c.ip_address FROM c 
-        WHERE STARTSWITH(c.datetime, '{current_year_month}')
+        WHERE STARTSWITH(c.datetime, '{current_month}')
         """
-
         
         # Execute the query
         ip_results = list(History_container.query_items(query=ip_query_str, enable_cross_partition_query=True))
@@ -266,8 +289,6 @@ def getChatHistory(request):
         total_token_cost = 0.0
         total_sessions = 0
         
-        cohort_ips = set()
-        
         returning_ips = set()
 
         for row in sorted_results:
@@ -292,13 +313,11 @@ def getChatHistory(request):
             if ip_address:
                 monthly_unique_ips[month_part].add(ip_address)
 
-            # Track unique IPs for today and the current month
-            if from_date_str and to_date_str:
-                if from_date.date() <= date_part <= to_date.date() and ip_address:
-                    unique_ips_today.add(ip_address)
-            else:
-                if date_part == today and ip_address:
-                    unique_ips_today.add(ip_address)
+             # Track unique IPs for today and the current month
+            if date_part == today and row['ip_address']:
+                unique_ips_today.add(row['ip_address'])
+            if month_part == current_month and row['ip_address']:
+                unique_ips_current_month.add(row['ip_address'])
 
             # Calculate total tokens used per row
             totalTokenUsed = 0
@@ -322,11 +341,12 @@ def getChatHistory(request):
                         unique_ips_current_month.add(ip_address)
                 elif month_part == current_month:
                     unique_ips_current_month.add(ip_address)
-
+            
+            
             # Track unique sessions by IP
             ip_address = row.get('ip_address')
             session_id = row.get('session_id')
-            if  session_id:
+            if  session_id and ip_address:
                 if session_id not in sessions_by_ip[ip_address]:
                     sessions_by_ip[ip_address].add(session_id)
                     total_sessions += 1
@@ -336,25 +356,26 @@ def getChatHistory(request):
                 if ip_address not in first_access_by_ip or dt < first_access_by_ip[ip_address]:
                     first_access_by_ip[ip_address] = dt
             
+            
             # Calculate the number of unique IPs
-            total_unique_ips = len(unique_ips)
-            # Calculate average sessions per IP
-            average_sessions_per_ip = total_sessions / total_unique_ips if total_unique_ips > 0 else 0
-
-            # Print or return the result
-            average_sessions_per_ip = round(average_sessions_per_ip, 2)
+        total_unique_ips = len(unique_ips)
+        # Calculate average sessions per IP
+        average_sessions_per_ip = total_sessions / total_unique_ips if total_unique_ips > 0 else 0
         
-            # Calculate average tokens per IP
-            average_tokens_per_ip = total_tokens_used / total_unique_ips if total_unique_ips else 0
-            average_tokens_per_ip = round(average_tokens_per_ip,2)
+        # Print or return the result
+        average_sessions_per_ip = round(average_sessions_per_ip, 2)
+    
+        # Calculate average tokens per IP
+        average_tokens_per_ip = total_tokens_used / total_unique_ips if total_unique_ips else 0
+        average_tokens_per_ip = round(average_tokens_per_ip,2)
 
-            # Calculate average tokens per Session
-            average_tokens_per_session = total_tokens_used / len(results)
-            average_tokens_per_session = round(average_tokens_per_session,2)
+        # Calculate average tokens per Session
+        average_tokens_per_session = total_tokens_used / len(results)
+        average_tokens_per_session = round(average_tokens_per_session,2)
 
-            # Calculate average token cost per user
-            average_token_cost_per_user = total_token_cost / total_unique_ips if total_unique_ips else 0
-            average_token_cost_per_user =round(average_token_cost_per_user,4)
+        # Calculate average token cost per user
+        average_token_cost_per_user = total_token_cost / total_unique_ips if total_unique_ips else 0
+        average_token_cost_per_user =round(average_token_cost_per_user,4)
 
         for row in data:
             # Parse the string into a datetime object

@@ -3,7 +3,13 @@
 
 <!-- Specific CSS goes HERE -->
 {% block stylesheets %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js"></script>
 
+<style>
+  .error {
+    color: red;
+} 
+</style>
 {% endblock stylesheets %} 
 {% block content %}
 
@@ -279,35 +285,27 @@
                 
                 ]
             });
+        });
 
-            // Datepicker initialization
-            $(".datepicker").datepicker({
-                dateFormat: 'yy-mm-dd'
-            });
+        $('#createUserModal').on('hidden.bs.modal', function () {
+          // Clear all input fields
+          $(this).find('form').trigger('reset');
+  
+          // Remove validation error messages
+          $(this).find('.error').text('');
+        });
 
-            // Filter button click event
-            $('#filter').click(function() {
-              if ($('#from-date').val() === '' || $('#to-date').val() === '') {
-                alert('Please select both From and To dates.');
-                return false; // Prevent form submission or further processing
-            }
-                var fromDate = $('#from-date').val();
-                var toDate = $('#to-date').val();
-                
-                table.ajax.url('{% url 'getUserData' %}?fromDate=' + fromDate + '&toDate=' + toDate).load();
-            });
-
-            $('#resetBtn').click(function() {
-              $('.datepicker').val('');  // Clear datepicker value
-              var fromDate = $('#from-date').val();
-              var toDate = $('#to-date').val();
-              // Redraw the DataTable
-              table.ajax.url('{% url 'getUserData' %}?fromDate=' + fromDate + '&toDate=' + toDate).load();
-          });
+        $('#userModal').on('hidden.bs.modal', function () {
+          // Remove validation error messages
+          // Clear error messages
+          $('#editUserForm').find('.error').text('');
+           // Remove is-invalid class from all form fields
+          $('#editUserForm').find('.form-control').removeClass('is-invalid');
         });
 
         // Function to fetch session data based on session_id
         $(document).on('click', '.edit-btn', function() {
+          
           var userId = $(this).data('id');
           var username = $(this).data('username');
           var email = $(this).data('email');
@@ -325,46 +323,111 @@
           $('#userModal').modal('show');
       });
 
+      $("#editUserForm").validate({
+        rules: {
+            username: {
+                required: true,
+                minlength: 3
+            },
+            email: {
+                required: true,
+                email: true
+            },
+            role: {
+                required: true
+            },
+            status: {
+                required: true
+            }
+        },
+        messages: {
+            username: {
+                required: "Please enter a username",
+                minlength: "Your username must consist of at least 3 characters"
+            },
+            email: {
+                required: "Please enter an email address",
+                email: "Please enter a valid email address"
+            },
+            role: {
+                required: "Please select a role"
+            },
+            status: {
+                required: "Please select a status"
+            }
+        },
+        errorPlacement: function(error, element) {
+          if (element.parent().hasClass('input-group')) {
+              error.insertAfter(element.parent()); // handle Bootstrap input group
+          } else if (element.hasClass('selectpicker')) {
+              error.insertAfter(element.next('button')); // handle Bootstrap selectpicker
+          } else {
+              error.insertAfter(element); // default placement
+          }
+      },
+      highlight: function(element, errorClass, validClass) {
+          $(element).addClass('is-invalid');
+      },
+      unhighlight: function(element, errorClass, validClass) {
+          $(element).removeClass('is-invalid');
+          $(element).closest('.form-group').find('.error').html('');
+      }
+    });
+
        $('#saveUserDetails').on('click', function() {
         // Get form data
-        
-        var formData = {
+        if($("#editUserForm").valid()) {
+          // Form is valid, proceed with form submission or AJAX call
+          var formData = {
             userId: $('#editUserForm #userId').val(),
             username: $('#editUserForm #username').val(),
             email: $('#editUserForm #email').val(),
             role: $('#editUserForm #role').val(),
             status: $('#editUserForm #status').val() === 'Active'
-        };
+          };
 
         // Perform AJAX request to save the updated user details
-        $.ajax({
-            url: '{% url 'register' %}', // Update with your actual endpoint
-            type: 'POST',
-            data: formData,
-            success: function(response) {
-              if (response.status === 200) {
-                alert("User details updated successfully !")
-                // Handle success response
-                $('#userModal').modal('hide');
-                $('#userDetails').DataTable().ajax.reload();
-              }
-              else{
-                var errors =response.errors
-                console.log(errors)
-                for (const field in errors) {
-                  console.log(errors[field][0])
-                  
-                  $('#'+field+'_e_error').text(errors[field][0]);
+          $.ajax({
+              url: '{% url 'register' %}', // Update with your actual endpoint
+              type: 'POST',
+              data: formData,
+              success: function(response) {
+                if (response.status === 200) {
+                  alert("User details updated successfully !")
+                  // Handle success response
+                  $('#userModal').modal('hide');
+                  $('#userDetails').DataTable().ajax.reload();
                 }
+                else{
+                  var errors =response.errors
+                  console.log(errors)
+                  for (const field in errors) {
+                    console.log(errors[field][0])
+                    
+                    $('#'+field+'_e_error').text(errors[field][0]);
+                  }
+                }
+                // Reload DataTable data
+              },
+              error: function(error) {
+                  
+                  console.log(error.responseText)
+                  // Handle error response
+                  if (error.responseText.includes("UNIQUE constraint failed: Dashboard_user.username")) {
+                    $('#username_e_error').text('Username already exists')
+                    
+                  } else if(error.responseText.includes("UNIQUE constraint failed: Dashboard_user.email")) {
+                    
+                    $('#email_e_error').text('Email already exists')
+                  
+                  }
+                  else{
+                    alert('Error updating user details');
+                  }
+                  
               }
-               // Reload DataTable data
-            },
-            error: function(error) {
-                console.log(error)
-                // Handle error response
-                alert('Error updating user details');
-            }
-        });
+          });
+        }
     });
     
     $(document).on('click', '#createUser', function() {
@@ -390,6 +453,7 @@
                   } else {
                       var errors =response.errors
                       console.log(errors)
+                      $('.error').text('');
                       for (const field in errors) {
                         console.log(errors[field][0])
                         
@@ -402,9 +466,6 @@
                   
               }
           });
-            
-              
-            
         });
     })
     
