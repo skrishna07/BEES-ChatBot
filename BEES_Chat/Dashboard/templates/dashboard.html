@@ -129,11 +129,7 @@
                     },
                     { "data": "ip_address" },
                     { "data": "total_token_used" },
-                    { "data": "total_token_cost",
-                        "render": function(data, type, row) {
-                        return data + ' $'; // Add the $ symbol after the cost
-                      }  
-                    },
+                    { "data": "total_token_cost" },
                     {
                         "data": "session_id",
                         "render": function(data, type, row) {
@@ -182,7 +178,52 @@
             let sessionData = getSessionData(session_id,ip_address);
         });
 
-        
+        // Function to fetch session data based on session_id
+        function getSessionData(session_id,ip_address) {
+            let sessionData = [];
+            var settings = {
+                "url": "{% url 'sessionHistory' %}",
+                "method": "POST",
+                "timeout": 0,
+                "headers": {
+                  "Authorization": "token 8baa4ffcbc8a8cd3eef5f4ba36686b67a48d4465",
+                  "Content-Type": "application/json"
+                },
+                "data": JSON.stringify({
+                  "session_id": session_id
+                }),
+              };
+              
+              $.ajax(settings)
+                .done(function (response) {
+
+                    $('#sessionDetailsBody').empty();
+                    let responses = response[0].responses;
+                    // Populate modal content with session details
+                    responses.forEach(function(data) {
+                        
+                        let row = '<tr>' +
+                            '<td>' + data.query + '</td>' +
+                            '<td style=" white-space: normal;">' + data.response + '</td>' +
+                            '<td>' + data.token_used + '</td>' +
+                            '<td>' + data.total_cost.toFixed(4) + '</td>' +
+                            '</tr>';
+                        $('#sessionDetailsBody').append(row);
+                    });
+                    // Set the session_id and IP address in the modal
+                    $('#modalSessionId').text(session_id);
+                    $('#modalIpAddress').text(ip_address);
+                    
+                    // Open modal
+                    $('#sessionModal').modal('show');
+                    // Call any function that needs to use sessionData here,
+                    // since this code block executes after the AJAX request completes.
+                   
+                })
+                .fail(function (jqXHR, textStatus, errorThrown) {
+                    console.error("Error fetching session data:", textStatus, errorThrown);
+                });
+        }
   </script>
   {% endblock javascripts %}
 </div>
