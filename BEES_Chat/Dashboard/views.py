@@ -10,6 +10,7 @@ from collections import defaultdict
 import json
 import time
 import django.views.decorators.csrf
+from django.views.decorators.csrf import csrf_exempt
 # from django.contrib.auth import get_user_model
 import os
 from .models import User
@@ -43,7 +44,7 @@ def loginPage(request):
     return render(request, 'login.html',{'form':form})   
 
 @login_required
-@django.views.decorators.csrf.csrf_exempt
+@csrf_exempt
 def signupPage(request):
     if  request.method=='POST':
         user_id = request.POST.get('userId', None)
@@ -106,7 +107,35 @@ def signupPage(request):
             # Handle the case where the user is not authenticated
             # Redirect to login or handle appropriately
             return HttpResponse("You are not authenticated.")
-    
+        
+@csrf_exempt
+def reset_password(request):
+    if request.method == 'POST':
+        user_id = request.POST.get('user_id')
+        password = request.POST.get('password')
+        confirm_password = request.POST.get('confirm_password')
+        print(user_id , password , confirm_password)
+        # Validate the form data
+        if not user_id or not password or not confirm_password:
+            return JsonResponse({'success': False, 'message': 'All fields are required.'})
+
+        if password != confirm_password:
+            return JsonResponse({'success': False, 'message': 'Passwords do not match.'})
+
+        try:
+            # Fetch the user and update the password
+            user = User.objects.get(pk=user_id)
+            user.set_password(password)
+            user.save()
+
+            return JsonResponse({'success': True, 'message': 'Password reset successfully.'})
+        except User.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'User not found.'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request method.'})
+        
 @login_required    
 def dashboard(request):
     if request.user.is_authenticated:
@@ -174,13 +203,41 @@ def sessionAnalytics(request):
 def getChatHistory(request):
     try:
         query_str = "SELECT * FROM c WHERE 1=1"  # Start with a base query
+        
         # Get today's date and the current month
         today = datetime.today().date()
         current_month = today.strftime('%Y-%m')
 
-        # Check if fromDate is provided in the request
+        start_time = time.time()
+        draw = request.POST.get('draw')
+        start = int(request.POST.get('start', 0))
+        length = int(request.POST.get('length', 10))
         from_date_str = request.GET.get('fromDate', None)
+        to_date_str = request.GET.get('toDate', None)
+        search = request.POST.get('search', None)
+
+        # Track unique session IDs
+        unique_sessions = set()
+        monthly_unique_ips = defaultdict(set)
         
+        # Track unique IPs for today and the current month
+        unique_ips_today = set()
+        unique_ips_current_month = set()
+
+        # Initialize variables
+        sessions_by_ip = defaultdict(set)
+        unique_ips = set()
+        first_access_by_ip = {}
+
+        # Initialize counters
+        daily_unique_users_count = 0
+        total_tokens_used = 0
+        total_unique_ips = 0
+        total_token_cost = 0.0
+        total_sessions = 0
+        returning_ips = set()
+
+        # Check if fromDate is provided in the request
         if from_date_str:
             try:
                 from_date = datetime.strptime(from_date_str, '%m/%d/%Y')
@@ -191,7 +248,6 @@ def getChatHistory(request):
                 pass
         
         # Check if toDate is provided in the request
-        to_date_str = request.GET.get('toDate', None)
         if to_date_str:
             try:
                 to_date = datetime.strptime(to_date_str, '%m/%d/%Y')
@@ -215,25 +271,12 @@ def getChatHistory(request):
             query_str += f" AND c.datetime < '{to_date.isoformat()}'"
 
         # Check if search value is provided in the request
-        search = request.POST.get('search', None)
         if search:
             # Add search functionality for ip_address and session_id
             query_str += f" AND (CONTAINS(c.ip_address, '{search}') OR CONTAINS(c.session_id, '{search}') OR CONTAINS(c.datetime, '{search}'))"
 
         # Query the database with the constructed SQL query
         results = list(History_container.query_items(query=query_str, enable_cross_partition_query=True))
-
-        # Construct the query to get unique IPs for the current month
-        ip_query_str = f"""
-        SELECT DISTINCT c.ip_address FROM c 
-        WHERE STARTSWITH(c.datetime, '{current_month}')
-        """
-        
-        # Execute the query
-        ip_results = list(History_container.query_items(query=ip_query_str, enable_cross_partition_query=True))
-
-        # Print or process the results
-        distict_ips = [item['ip_address'] for item in ip_results]
         
         if not results:
             return JsonResponse({
@@ -252,14 +295,9 @@ def getChatHistory(request):
                 'average_sessions_per_ip':0,
                 'user_retention_rate': 0
             })
-
-            # Sort the results by the 'datetime' field in descending order
+    
+        # Sort the results by the 'datetime' field in descending order
         sorted_results = sorted(results, key=lambda x: datetime.strptime(x['datetime'], '%Y-%m-%d %H:%M:%S.%f'), reverse=True)
-        
-        start_time = time.time()
-        draw = request.POST.get('draw')
-        start = int(request.POST.get('start', 0))
-        length = int(request.POST.get('length', 10))
         
         # Paginate the data
         if length == -1:
@@ -273,33 +311,47 @@ def getChatHistory(request):
             data = paginator.page(1)
         except EmptyPage:
             data = []
-
         result = []
 
-        # Track unique session IDs
-        unique_sessions = set()
-        daily_unique_ips = defaultdict(set)
-        monthly_unique_ips = defaultdict(set)
-        
-        # Track unique IPs for today and the current month
-        unique_ips_today = set()
-        
-        unique_ips_current_month = set()
+    # -------- For loop for preparing data for displaying in datatable starts -------------#
+        for row in data:
+            # Parse the string into a datetime object
+            datetime_str = row['datetime']
+            dt = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S.%f')
+            
+            # Extract the date and time
+            date_part = dt.date()
+            time_part = dt.time()
+            month_part = dt.strftime('%Y-%m')
 
-        # Initialize variables
-        sessions_by_ip = defaultdict(set)
-        unique_ips = set()
-        first_access_by_ip = {}
+            # Format the date and time
+            formatted_date = date_part.strftime('%Y-%m-%d')
+            formatted_time = time_part.strftime('%H:%M:%S')
+            
+            totalTokenUsed = 0
+            totalTokenCost = 0.0
 
-        # Initialize counters
-        daily_unique_users_count = 0
-        total_tokens_used = 0
-        total_unique_ips = 0
-        total_token_cost = 0.0
-        total_sessions = 0
-        
-        returning_ips = set()
+            # Iterate over the responses to sum the token_used and total_cost
+            for response in row['responses']:
+                totalTokenUsed += response['token_used']
+                totalTokenCost += response['total_cost']
 
+            totalTokenCost = round(totalTokenCost, 4)
+            
+            # Add session ID to the set of unique sessions
+            unique_sessions.add(row['session_id']) 
+            result.append({
+                'date': formatted_date,
+                'time': formatted_time,
+                'session_id': row['session_id'],
+                'ip_address': row['ip_address'],
+                'total_token_used': totalTokenUsed,
+                'total_token_cost': totalTokenCost
+            })
+        # -------- For loop ends here -------------#
+
+
+    # -------- For loop starts -------------#
         for row in sorted_results:
             # Parse the string into a datetime object
             datetime_str = row['datetime']
@@ -317,7 +369,6 @@ def getChatHistory(request):
             # Track unique users daily
             if ip_address and date_part == today:
                 unique_ips_today.add(ip_address)
-            
             
             # Track monthly unique users
             if ip_address:
@@ -352,7 +403,6 @@ def getChatHistory(request):
                 elif month_part == current_month:
                     unique_ips_current_month.add(ip_address)
             
-            
             # Track unique sessions by IP
             ip_address = row.get('ip_address')
             session_id = row.get('session_id')
@@ -365,9 +415,10 @@ def getChatHistory(request):
                 # Track first access date by IP
                 if ip_address not in first_access_by_ip or dt < first_access_by_ip[ip_address]:
                     first_access_by_ip[ip_address] = dt
-            
-            
-            # Calculate the number of unique IPs
+
+        # -------- For loop ends -------------#     
+        
+        # Calculate the number of unique IPs
         total_unique_ips = len(unique_ips)
         # Calculate average sessions per IP
         average_sessions_per_ip = total_sessions / total_unique_ips if total_unique_ips > 0 else 0
@@ -386,41 +437,6 @@ def getChatHistory(request):
         # Calculate average token cost per user
         average_token_cost_per_user = total_token_cost / total_unique_ips if total_unique_ips else 0
         average_token_cost_per_user =round(average_token_cost_per_user,4)
-
-        for row in data:
-            # Parse the string into a datetime object
-            datetime_str = row['datetime']
-            dt = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S.%f')
-            
-            # Extract the date and time
-            date_part = dt.date()
-            time_part = dt.time()
-            month_part = dt.strftime('%Y-%m')
-
-            # Format the date and time
-            formatted_date = date_part.strftime('%Y-%m-%d')
-            formatted_time = time_part.strftime('%H:%M:%S')
-            
-            totalTokenUsed = 0
-            totalTokenCost = 0.0
-
-            # Iterate over the responses to sum the token_used and total_cost
-            for response in row['responses']:
-                totalTokenUsed += response['token_used']
-                totalTokenCost += response['total_cost']
-
-            totalTokenCost = round(totalTokenCost, 4)
-
-            # Add session ID to the set of unique sessions
-            unique_sessions.add(row['session_id']) 
-            result.append({
-                'date': formatted_date,
-                'time': formatted_time,
-                'session_id': row['session_id'],
-                'ip_address': row['ip_address'],
-                'total_token_used': totalTokenUsed,
-                'total_token_cost': totalTokenCost
-            })
         
         # Calculate frequency of use
         total_sessions = len(results)
@@ -441,6 +457,14 @@ def getChatHistory(request):
         retention_rate = (len(returning_ips) / len(first_access_by_ip)) * 100 if first_access_by_ip else 0
         retention_rate = round(retention_rate, 2)
 
+        # Construct the query to get unique IPs for the current month
+        ip_query_str = f""" SELECT DISTINCT c.ip_address FROM c 
+            WHERE STARTSWITH(c.datetime, '{current_month}') """
+        # Execute the query
+        ip_results = list(History_container.query_items(query=ip_query_str, enable_cross_partition_query=True))
+        # Print or process the results
+        distinct_ips = [item['ip_address'] for item in ip_results]
+
         # Prepare the response
         response_data = {
             'draw': draw,
@@ -449,7 +473,7 @@ def getChatHistory(request):
             'data': list(result),
             'unique_sessions_count': len(unique_sessions),
             'daily_unique_ips': daily_unique_users_count,
-            'monthly_unique_ips': len(distict_ips),
+            'monthly_unique_ips': len(distinct_ips),
             'monthly_unique_ips_count': len(monthly_unique_ips),
             'unique_ips_today': len(unique_ips_today),
             'unique_ips_current_month': len(unique_ips_current_month),

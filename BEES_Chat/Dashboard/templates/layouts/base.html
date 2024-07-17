@@ -109,8 +109,10 @@
 
     <input type="hidden" id="current_date" value="{{ dates.today }}"> 
     <input type="hidden" id="previous_date" value="{{ dates.seven_days_ago }}">
-<!--Session Details Modal Start-->
-  <div class="modal fade" id="sessionModal" tabindex="-1" aria-labelledby="sessionModalLabel"
+
+
+    <!--Session Details Modal Start-->
+<div class="modal fade" id="sessionModal" tabindex="-1" aria-labelledby="sessionModalLabel"
   aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered  modal-dialog-scrollable modal-lg">
     <div class="modal-content">
@@ -131,15 +133,22 @@
           <hr>
           <thead>
             <tr>
-              <th>Query</th>
-              <th>Response</th>
-              <th>Token Used</th>
-              <th>Total Cost</th>
+              <th><b>Query</b></th>
+              <th><b>Response</b></th>
+              <th><b>Total Tokens Used</b></th>
+              <th><b>Total Token Cost $</b></th>
             </tr>
           </thead>
           <tbody id="sessionDetailsBody">
             <!-- Data will be populated dynamically -->
           </tbody>
+          <tfoot>
+            <tr>
+                <th colspan="2"><b>Total:</b></th>
+                <th id="totalTokensUsed"></th>
+                <th id="totalTokensCost"></th>
+            </tr>
+        </tfoot>
         </table>
       </div>
       <div class="modal-footer">
@@ -164,8 +173,141 @@
   {% block javascripts %}{% endblock javascripts %}
   <script>
 
+    var table=$('#chatHistory').DataTable({
+      "lengthMenu": [ [10, 25, 50, -1], [10, 25, 50, "All"] ],
+      "processing": true,
+      "serverSide": true,
+      buttons: [
+          
+          {
+              extend: 'excelHtml5',
+              text: 'Export Excel',
+              exportOptions: {
+                columns: ':not(:last-child)' // Exclude the last column (Action column)
+            }
+          },
+          {
+            extend: 'pdfHtml5',
+            text: 'Export PDF',
+            exportOptions: {
+              columns: ':not(:last-child)' // Exclude the last column (Action column)
+          }
+        }
+      ],
+        "ajax": {
+                "url": "{% url 'chatHistory' %}",
+                "type": "POST",
+                "data": function(d) {
+                    // Add date filter parameters to the AJAX request data
+                    d.fromDate = $('#from-date').val();
+                    d.toDate = $('#to-date').val();
+                    d.search = $('.dataTables_filter input').val();
+                  return d; 
+                },
+                "dataSrc": function(json) {
+                    // Modify the JSON data to handle nested rows for each response
+                    if (json && json.data && json.data.length > 0) {
+                      console.log(json)
+                      var currentDate=$('#current_date').val()
+                      
+                      var toDate=$('#to-date').val()
+
+                      if(toDate ==='' || toDate ==currentDate){
+                        $('#daily_unique_users').text(json.unique_ips_today)
+                      }
+                      
+                      $('#monthly_unique_users').text(json.monthly_unique_ips)
+                      
+                      $('#frequecy_of_use').text(json.frequency_of_use)
+                      $('#average_tokens_per_ip').text(json.average_tokens_per_ip)
+                      $('#average_token_cost_per_user').text(json.average_token_cost_per_user)
+                      $('#user_retention_rate').text(json.user_retention_rate)
+
+                      $('#total_sessions').text(json.recordsTotal)
+                      $('#average_tokens_per_session').text(json.average_tokens_per_session)
+                      $('#average_sessions_per_ip').text(json.average_sessions_per_ip)
+
+                      return json.data;
+                  } else {
+                    $('#daily_unique_users').text(json.unique_ips_today)
+                    $('#monthly_unique_users').text(json.unique_ips_current_month)
+                    $('#frequecy_of_use').text(json.frequency_of_use)
+                    $('#average_tokens_per_ip').text(json.average_tokens_per_ip)
+                    $('#average_token_cost_per_user').text(json.average_token_cost_per_user)
+                    $('#user_retention_rate').text(json.user_retention_rate)
+                    $('#total_sessions').text(json.recordsTotal)
+                    $('#average_tokens_per_session').text(json.average_tokens_per_session)
+                    $('#average_sessions_per_ip').text(json.average_sessions_per_ip)
+                      // Show a message when no records are found
+                      $('#chatHistory tbody').html('<tr><td colspan="8" class="text-center">No records found</td></tr>');
+                      return [];
+                  }
+                }
+            },
+            "columns": [
+                { "data": "date" },
+                { "data": "time" },
+                {
+                    "data": "session_id",
+                    "render": function(data, type, row) {
+                        return `<a href="#" class="session-id-btn"  data-session_id="${data}" data-ip_address="${row.ip_address}" data-tokens="${row.total_token_used}" data-cost="${row.total_token_cost}">${data}</a>`;
+                    },
+                    
+                },
+                { "data": "ip_address" },
+                { "data": "total_token_used" },
+                { "data": "total_token_cost"},
+                {
+                    "data": "session_id",
+                    "render": function(data, type, row) {
+                        return `<a href="#" class="btn btn-primary session-id-btn" data-session_id="${data}" data-ip_address="${row.ip_address}" data-tokens="${row.total_token_used}" data-cost="${row.total_token_cost}"><i class="fas fa-eye"></i></a>`;
+                    }
+                }
+            ],
+            columnDefs: [
+              { targets: [4, 5], className: 'text-center' } // Targets columns 4 (Tokens Used) and 5 (Tokens Cost)
+            ],
+            "searching": true,
+            "paging": true,
+            "regex" : true,
+            "lengthChange": true,
+            "ordering": false,
+            "info": true,
+            "autoWidth": true,
+            dom: 'Blfrtip',
+            "footerCallback": function (row, data, start, end, display) {                
+              //Get data here 
+              var api = this.api();
+
+              // Total for tokens_used column
+              var tokensUsedTotal = api.column(4, {page: 'current'}).data().reduce(function(acc, val) {
+                  return acc + parseFloat(val);
+              }, 0);
+  
+              // Total for tokens_cost column
+              var tokensCostTotal = api.column(5, {page: 'current'}).data().reduce(function(acc, val) {
+                  return acc + parseFloat(val);
+              }, 0);
+  
+              // Update footer
+              $(api.column(4).footer()).html(tokensUsedTotal);
+              $(api.column(5).footer()).html(tokensCostTotal.toFixed(4) + ' $');
+              }
+        });
+    
+
+    $('#chatHistory').on('click', '.session-id-btn', function() {
+      // Get session_id from clicked button
+        let session_id = $(this).data('session_id'); // Get session_id from clicked button
+        let ip_address = $(this).data('ip_address'); // Get ip_address from clicked button
+        let cost = $(this).data('cost'); // Get cost from clicked button
+        let tokens = $(this).data('tokens'); // Get tokens from clicked button
+
+        let sessionData = getSessionData(session_id,ip_address,tokens,cost);
+    });
+
     // Function to fetch session data based on session_id
-    function getSessionData(session_id,ip_address) {
+    function getSessionData(session_id,ip_address,tokens,cost) {
       let sessionData = [];
       var settings = {
           "url": "{% url 'sessionHistory' %}",
@@ -186,38 +328,47 @@
               $('#sessionDetailsBody').empty();
               let responses = response[0].responses;
               // Populate modal content with session details
+              
+              
               responses.forEach(function(data) {
-                  console.log(data)
+                  
+                  if (data.response.includes('<table')) {
+                    responseContent = fixUnclosedTable(data.response);
+                  }
+                  else{
+                    responseContent =data.response
+                  }
                   let row = '<tr>' +
                     '<td style="width: 30%; word-wrap: break-word; white-space: normal;">' + data.query + '</td>' +
-                    '<td style="width: 50%; white-space: normal;">' + data.response + 
+                    '<td style="width: 50%; white-space: normal;">' + responseContent + 
                         ' | <b>Source</b> : ' +
                         '<a href="https://biologicale.blob.core.windows.net/beesfiles/' + data.source + '" target="_blank">' + 
                         data.source + 
                         '</a>' +
                     '</td>' +
-                    '<td style="width: 20%;">' + data.token_used + '</td>' +
-                    '<td style="width: 20%;">' + data.total_cost.toFixed(4) + '</td>' +
+                    '<td style="width: 20%; text-align: center;">' + data.token_used + '</td>' +
+                    '<td style="width: 20%; text-align: center;">' + data.total_cost.toFixed(4) + '</td>' +
                     '</tr>';
+                    
                   $('#sessionDetailsBody').append(row);
               });
+
               // Set the session_id and IP address in the modal
               $('#modalSessionId').text(session_id);
               $('#modalIpAddress').text(ip_address);
               
+              $('#totalTokensUsed').text(tokens).css('text-align', 'center');
+              $('#totalTokensCost').text(cost +' $').css('text-align', 'center');
               // Open modal
               $('#sessionModal').modal('show');
-              // Call any function that needs to use sessionData here,
-              // since this code block executes after the AJAX request completes.
-             
           })
           .fail(function (jqXHR, textStatus, errorThrown) {
               console.error("Error fetching session data:", textStatus, errorThrown);
           });
       }
-
-    $(document).ready(function() {
+    
       
+    $(document).ready(function() {
       // Datepicker initialization
       $(".datepicker").datepicker({
         dateFormat: 'yy-mm-dd',
@@ -261,9 +412,21 @@
           // Redraw the DataTable
           $('#chatHistory').DataTable().ajax.url('{% url 'chatHistory' %}?fromDate=' + fromDate + '&toDate=' + toDate).load();
       }); 
-
       
     })
+
+    function fixUnclosedTable(htmlContent) {
+      // Count occurrences of <table> and </table>
+      let openTableCount = (htmlContent.match(/<table/g) || []).length;
+      let closeTableCount = (htmlContent.match(/<\/table>/g) || []).length;
+  
+      // If the table is not properly closed, append </table> tag
+      if (openTableCount > closeTableCount) {
+          htmlContent += '</table>';
+      }
+  
+      return htmlContent;
+    }
   </script>
   <script src="/static/assets/js/argon.js?v=1.2.0"></script>
 </body>
