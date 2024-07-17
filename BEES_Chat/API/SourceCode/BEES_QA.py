@@ -120,7 +120,7 @@ contextualize_q_prompt = ChatPromptTemplate.from_messages(
 llm = AzureChatOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
     azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
-    openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"), temperature=0.5, max_tokens=500
+    openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"), temperature=1, max_tokens=1000
 )
 
 prompt_search_query = ChatPromptTemplate.from_messages([
@@ -139,7 +139,7 @@ You are a highly knowledgeable and concise assistant specializing in question-an
 1. Answer only with relevant information derived from the provided context.
 2. Provide precise and concise answers within the context.
 4. Ensure your answers are grammatically correct and complete sentences.
-5. If the context does not contain the answer, state "The answer is not found in the context."
+5. If the context does not contain the answer, state "Sorry, I don't have information."
 6. Do not assume or infer information that is not explicitly mentioned in the context.
 7. Do not include personal opinions or interpretations.
 8. Avoid redundant information; be direct and to the point.
@@ -151,10 +151,10 @@ You are a highly knowledgeable and concise assistant specializing in question-an
 14. Do not provide general knowledge or background information unless explicitly requested.
 15. If the answer requires multiple parts, number each part clearly
 18. Avoid greetings, sign-offs, and any conversational fillers.
-19. Avoid the greetings or general queries like below content and state 'I am BeesChat Assistant, How can i assist you'
+19. Avoid the greetings or general queries like below content and state 'How can i assist you'
     greeting = ["hello", "hi", "hey", "good morning", "good afternoon", "good evening"]
     general_inquiries = ["how are you", "what's up", "how's it going", "what's new"]
-20. Avoid general knowledge questions and,state "The answer is not found in the context."
+20. Avoid general knowledge questions and,state "Sorry, I don't have information."
 21. If the question is related to bus schedules or routes, provide the answer in below html table format.
     <table>
       <tr>
@@ -162,9 +162,10 @@ You are a highly knowledgeable and concise assistant specializing in question-an
         <th>Time</th>
       </tr>
     </table>
-22. Avoid Request for assistance, informal queries, general queries and state 'I am BeesChat Assistant, How can i assist you'
+22. Avoid Request for assistance, informal queries, general queries and state 'Sorry, I don't have information.'
 23. Avoid feedback and state 'You're welcome! I am BeesChat Assistant, How can i assist you'
 24. If the question is related to route number or bus number fetch the route number in context and provide the answer.
+25. Remove the word context states in the answer.
 Context: {context}
 
 **Stay on topic:** Answer the question based solely on the information in the context. Do not use any outside knowledge.
@@ -194,17 +195,29 @@ QA_chain = RunnableWithMessageHistory(
 
 def is_greeting(sentence):
     # Simple rule-based system for greetings and general inquiries
-    greeting = ["hello", "hi", "hey", "good morning", "good afternoon", "good evening"]
-    general_inquiries = ["how are you", "what's up", "how's it going", "what's new"]
+    # Simple rule-based system for greetings and general inquiries
+    greeting = ["hello", "hi", "hey", "good morning", "good afternoon", "good evening", "howdy", "greetings"]
+    general_inquiries = ["how are you", "what's up", "how's it going", "what's new", "tell me about yourself",
+                         "how's your day", "what's going on"]
+    thank_you = ["thank you", "thanks a lot", "thanks", "much appreciated", "thank you so much", "thank you very much"]
+    conversation_enders = ["goodbye", "bye", "see you later", "talk to you soon", "take care", "have a good one",
+                           "see you", "until next time", "farewell"]
 
     # Normalize the query
-    normalized_query = sentence.lower().split()
+    normalized_query = sentence.lower()
 
     if any(greet in normalized_query for greet in greeting):
         return "Hello! How can I assist you today?", True
 
     if any(inquiry in normalized_query for inquiry in general_inquiries):
         return "I'm an AI assistant, here to help you with your questions.", True
+
+    if any(thanks in normalized_query for thanks in thank_you):
+        return "You're welcome!", True
+
+    if any(end_phrase in normalized_query for end_phrase in conversation_enders):
+        return "Goodbye! Have a great day.", True
+
     return "", False
 
 
@@ -213,7 +226,7 @@ def post_process_answer(context, answer, link):
     for content in ["does not provide", "not found", "does not contain", "not provided", "does not mention",
                     "does not"]:
         if content.lower() in answer.lower():
-            return "The answer is not available in the provided context.", ''
+            return "Sorry, I don't have information. Could you please provide more precise question", ''
     if "BeesChat Assistant" in answer or "unable to" in answer or "feel free" in answer or "to ask" in answer or "How can I help you" in answer or "assist you" in answer:
         return answer, ''
     return answer, link
@@ -247,11 +260,11 @@ def AzureCosmosQA(human, session_id):
                 source_link = source_links[0]
             else:
                 source_link = ''
-                response = "The answer is not available in the provided context."
+                response = "Sorry, I don't have information. Could you please provide more precise question"
             if "<table>" not in response:
                 if similarity < 0.075:
                     source_link = ''
-                    response = "The answer is not available in the provided context."
+                    response = "Sorry, I don't have information. Could you please provide more precise question"
             source_link = re.sub(r'.*Files', '', source_link)
             response, source_link = post_process_answer(str(context), response, source_link)
             print(f"Total Tokens: {cb.total_tokens}")
