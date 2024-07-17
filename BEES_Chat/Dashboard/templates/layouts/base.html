@@ -89,7 +89,8 @@
   }
   .custom-card-height {
     height: 110px; /* Set your desired height here */
-  } 
+  }
+  
   </style>
   <!-- Specific CSS goes HERE -->
   {% block stylesheets %}
@@ -131,7 +132,7 @@
           <thead>
             <tr>
               <th>Query</th>
-              <th style=" white-space: normal;">Response</th>
+              <th>Response</th>
               <th>Token Used</th>
               <th>Total Cost</th>
             </tr>
@@ -162,6 +163,59 @@
   <!-- Specific JS goes HERE --> 
   {% block javascripts %}{% endblock javascripts %}
   <script>
+
+    // Function to fetch session data based on session_id
+    function getSessionData(session_id,ip_address) {
+      let sessionData = [];
+      var settings = {
+          "url": "{% url 'sessionHistory' %}",
+          "method": "POST",
+          "timeout": 0,
+          "headers": {
+            "Authorization": "token 8baa4ffcbc8a8cd3eef5f4ba36686b67a48d4465",
+            "Content-Type": "application/json"
+          },
+          "data": JSON.stringify({
+            "session_id": session_id
+          }),
+        };
+        
+        $.ajax(settings)
+          .done(function (response) {
+
+              $('#sessionDetailsBody').empty();
+              let responses = response[0].responses;
+              // Populate modal content with session details
+              responses.forEach(function(data) {
+                  console.log(data)
+                  let row = '<tr>' +
+                    '<td style="width: 30%; word-wrap: break-word; white-space: normal;">' + data.query + '</td>' +
+                    '<td style="width: 50%; white-space: normal;">' + data.response + 
+                        ' | <b>Source</b> : ' +
+                        '<a href="https://biologicale.blob.core.windows.net/beesfiles/' + data.source + '" target="_blank">' + 
+                        data.source + 
+                        '</a>' +
+                    '</td>' +
+                    '<td style="width: 20%;">' + data.token_used + '</td>' +
+                    '<td style="width: 20%;">' + data.total_cost.toFixed(4) + '</td>' +
+                    '</tr>';
+                  $('#sessionDetailsBody').append(row);
+              });
+              // Set the session_id and IP address in the modal
+              $('#modalSessionId').text(session_id);
+              $('#modalIpAddress').text(ip_address);
+              
+              // Open modal
+              $('#sessionModal').modal('show');
+              // Call any function that needs to use sessionData here,
+              // since this code block executes after the AJAX request completes.
+             
+          })
+          .fail(function (jqXHR, textStatus, errorThrown) {
+              console.error("Error fetching session data:", textStatus, errorThrown);
+          });
+      }
+
     $(document).ready(function() {
       
       // Datepicker initialization
@@ -190,29 +244,28 @@
           
             $('#chatHistory').DataTable().ajax.url('{% url 'chatHistory' %}?fromDate=' + fromDate + '&toDate=' + toDate).load();
           }
-        });
+      });
 
       $('#resetBtn').click(function() {
        
-        $('.datepicker').val('');
-        var currentDate=$('#current_date').val()
-        var previousDate=$('#previous_date').val()
+          $('.datepicker').val('');
+          var currentDate=$('#current_date').val()
+          var previousDate=$('#previous_date').val()
 
-        // Set the datepicker values
-        $('#from-date').datepicker('setDate', previousDate);
-        $('#to-date').datepicker('setDate', currentDate);
-          // Clear datepicker value
-        var fromDate = $('#from-date').val();
-        var toDate = $('#to-date').val();
-        // Redraw the DataTable
-        $('#chatHistory').DataTable().ajax.url('{% url 'chatHistory' %}?fromDate=' + fromDate + '&toDate=' + toDate).load();
-    }); 
+          // Set the datepicker values
+          $('#from-date').datepicker('setDate', previousDate);
+          $('#to-date').datepicker('setDate', currentDate);
+            // Clear datepicker value
+          var fromDate = $('#from-date').val();
+          var toDate = $('#to-date').val();
+          // Redraw the DataTable
+          $('#chatHistory').DataTable().ajax.url('{% url 'chatHistory' %}?fromDate=' + fromDate + '&toDate=' + toDate).load();
+      }); 
+
+      
     })
   </script>
   <script src="/static/assets/js/argon.js?v=1.2.0"></script>
-  
-  
-
 </body>
 
 </html>
