@@ -80,6 +80,7 @@ openai_embeddings = AzureOpenAIEmbeddings(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
     openai_api_key=os.getenv('Azure_OPENAI_API_KEY'),
 )
+
 vectorstore = AzureCosmosDBNoSqlVectorSearch(embedding=openai_embeddings,
                                              cosmos_client=cosmos_client,
                                              database_name=database_name,
@@ -88,6 +89,7 @@ vectorstore = AzureCosmosDBNoSqlVectorSearch(embedding=openai_embeddings,
                                              indexing_policy=indexing_policy,
                                              cosmos_container_properties=cosmos_container_properties,
                                              cosmos_database_properties=cosmos_database_properties)
+
 qa_retriever = vectorstore.as_retriever(
     search_type="similarity",
     search_kwargs={"k": 1},
@@ -101,7 +103,12 @@ contextualize_q_system_prompt = (
     "formulate a standalone question which can be understood "
     "without the chat history. Do NOT answer the question, "
     "just reformulate it if needed and otherwise return it as is."
+    "For example:"
+    "Chat History - 1.when is world heart day?"
+    "Input - how many deaths"
+    "Answer - how many deaths related to heart attributed disease"
 )
+
 contextualize_q_prompt = ChatPromptTemplate.from_messages(
     [
         ("system", contextualize_q_system_prompt),
@@ -116,8 +123,15 @@ llm = AzureChatOpenAI(
     openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"), temperature=0.5, max_tokens=500
 )
 
+prompt_search_query = ChatPromptTemplate.from_messages([
+    MessagesPlaceholder(variable_name="chat_history"),
+    ("user", "{input}"),
+    ("user",
+     "Given the above conversation, generate a search query to look up to get information relevant to the conversation")
+])
+
 history_aware_retriever = langchain.chains.history_aware_retriever.create_history_aware_retriever(
-    llm, qa_retriever, contextualize_q_prompt)
+    llm, qa_retriever, prompt_search_query)
 
 ### Answer question ###
 system_prompt = ("""
