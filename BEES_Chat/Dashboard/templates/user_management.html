@@ -32,11 +32,9 @@
         <div class="card-header border-0">
             <div class="d-flex justify-content-between align-items-center">
               <h2 class="mb-0">User Details</h2>
-              <button class="btn btn-danger" id="createUser">Create User <i class="fa fa-user-plus"></i></button>
+              <button class="btn btn-primary" id="createUser">Create User <i class="fa fa-user-plus"></i></button>
           </div>
         </div>
-        
-        
        <br>
         <table id="userDetails" class="display">
           <thead>
@@ -215,6 +213,37 @@
     </div>
   </div>
 
+  <!-- Reset Password  Modal -->
+  <div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger" id="resetPasswordModalLabel">Reset Password</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="resetPasswordForm">
+                    <input type="hidden" id="user_id" name="user_id">
+                    <div class="form-group">
+                        <label for="password">New Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm_password">Confirm Password</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="ResetPasswordButton">Reset Password</button>
+            </div>
+        </div>
+    </div>
+</div>
+
   {% endblock content %}
 
   <!-- Specific JS goes HERE -->
@@ -269,6 +298,9 @@
                             </button>
                         <button class="btn btn-sm btn-danger delete-btn" data-id="${item.id}">
                             <i class="fas fa-trash-alt"></i>
+                        </button>
+                        <button class="btn btn-sm btn-info password-btn" data-id="${item.id}">
+                            <i class="fas fa-key"></i>
                         </button>` // Customize this as per your action button requirements
                         });
                     });
@@ -374,7 +406,7 @@
       }
     });
 
-       $('#saveUserDetails').on('click', function() {
+    $('#saveUserDetails').on('click', function() {
         // Get form data
         if($("#editUserForm").valid()) {
           // Form is valid, proceed with form submission or AJAX call
@@ -410,7 +442,6 @@
                 // Reload DataTable data
               },
               error: function(error) {
-                  
                   console.log(error.responseText)
                   // Handle error response
                   if (error.responseText.includes("UNIQUE constraint failed: Dashboard_user.username")) {
@@ -424,7 +455,6 @@
                   else{
                     alert('Error updating user details');
                   }
-                  
               }
           });
         }
@@ -504,6 +534,96 @@
             }
         });
     });
+
+
+    $("#resetPasswordForm").validate({
+      rules: {
+          password: {
+              required: true,
+              minlength: 8
+          },
+          confirm_password: {
+              required: true,
+              minlength: 8,
+              equalTo: "#password" // Ensure confirm_password matches password
+          }
+      },
+      messages: {
+          password: {
+              required: "Please enter a password",
+              minlength: "Your password must consist of at least 8 characters"
+          },
+          confirm_password: {
+              required: "Please enter an confirm password",
+              minlength: "Your password must consist of at least 8 characters",
+              equalTo: "Passwords do not match"
+          }
+      },
+      errorPlacement: function(error, element) {
+        if (element.parent().hasClass('input-group')) {
+            error.insertAfter(element.parent()); // handle Bootstrap input group
+        } else if (element.hasClass('selectpicker')) {
+            error.insertAfter(element.next('button')); // handle Bootstrap selectpicker
+        } else {
+            error.insertAfter(element); // default placement
+        }
+    },
+    highlight: function(element, errorClass, validClass) {
+        $(element).addClass('is-invalid');
+    },
+    unhighlight: function(element, errorClass, validClass) {
+        $(element).removeClass('is-invalid');
+        $(element).closest('.form-group').find('.error').html('');
+    }
+  });
+
+  $('#ResetPasswordButton').on('click', function() {
+    // Get form data
+    if($("#resetPasswordForm").valid()) {
+      
+      let password = $('#password').val();
+      let confirmPassword = $('#confirm_password').val();
+
+      $.ajax({
+        url: '{% url 'reset_password' %}', // Update with your actual endpoint
+        type: 'POST',
+        data: {
+            user_id: userId,
+            password: password,
+            confirm_password: confirmPassword
+        },
+        success: function(response) {
+            if (response.success) {
+                // Handle success
+                alert('Password reset successfully');
+                $('#resetPasswordModal').modal('hide');
+            } else {
+                // Handle error
+                alert('Error resetting password: ' + response.message);
+            }
+        },
+        error: function(error) {
+            // Handle AJAX error
+            alert('Error resetting password');
+        }
+    });
+
+    }
+  });
+  
+  $('#resetPasswordModal').on('hidden.bs.modal', function () {
+    // Remove validation error messages
+    // Clear error messages
+    $('#resetPasswordForm').find('.error').text('');
+    $(this).find('form').trigger('reset');
+     // Remove is-invalid class from all form fields
+    $('#resetPasswordForm').find('.form-control').removeClass('is-invalid');
+  });
+
+  $(document).on('click', '.password-btn', function() {
+      userId = $(this).data('id'); // Get the item ID from the data attribute
+      $('#resetPasswordModal').modal('show');
+  });
   </script>
   {% endblock javascripts %}
 </div>
