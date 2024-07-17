@@ -150,6 +150,7 @@ You are a highly knowledgeable and concise assistant specializing in question-an
     </table>
 22. Avoid Request for assistance, informal queries, general queries and state 'I am BeesChat Assistant, How can i assist you'
 23. Avoid feedback and state 'You're welcome! I am BeesChat Assistant, How can i assist you'
+24. If the question is related to route number or bus number fetch the route number in context and provide the answer.
 Context: {context}
 
 **Stay on topic:** Answer the question based solely on the information in the context. Do not use any outside knowledge.
@@ -223,18 +224,18 @@ def AzureCosmosQA(human, session_id):
             print("\n\n\n")
             print(context)
             print("\n")
-            print(response["answer"])
-            similarity = text_similarity(str(context), str(response["answer"]))
+            response = response["answer"]
+            print(response)
+            similarity = text_similarity(str(context), response)
             print(similarity)
             print("\n\n\n")
-            response = response["answer"]
             if source_links:
                 source_link = source_links[0]
             else:
                 source_link = ''
                 response = "The answer is not available in the provided context."
             if "<table>" not in response:
-                if similarity < 0.1:
+                if similarity < 0.075:
                     source_link = ''
                     response = "The answer is not available in the provided context."
             source_link = re.sub(r'.*Files', '', source_link)

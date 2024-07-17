@@ -12,6 +12,7 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStore
 
 from langchain_community.vectorstores.utils import maximal_marginal_relevance
+
 # import nltk
 #
 # # Download necessary resources from NLTK
@@ -19,6 +20,7 @@ from langchain_community.vectorstores.utils import maximal_marginal_relevance
 
 if TYPE_CHECKING:
     from azure.cosmos.cosmos_client import CosmosClient
+
 
 # def keyword_query(text, k):
 #     tokens = nltk.word_tokenize(text)
@@ -278,7 +280,7 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
     ) -> List[Tuple[Document, float]]:
         query = (
             "SELECT TOP {} c.id, c.text,c.source,c.category, VectorDistance(c.{}, {}) AS "
-            "SimilarityScore FROM c  ORDER BY VectorDistance(c.{}, {})".format(
+            "SimilarityScore FROM c ORDER BY VectorDistance(c.{}, {})".format(
                 k,
                 self._embedding_key,
                 embeddings,
@@ -299,10 +301,11 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
         # print(items)
         for item in items1:
             text = item["text"]
+            text = str(text).replace("\n", " ")
             if text == '©':
                 continue
             score = item["SimilarityScore"]
-            print(score)
+            print("Score- ", score)
             link = item["source"]
             meta = {"source": item["source"], "category": item["category"]}
             docs_and_scores.append(
