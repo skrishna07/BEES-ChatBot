@@ -98,15 +98,7 @@ qa_retriever = vectorstore.as_retriever(
 
 ### Contextualize question ###
 contextualize_q_system_prompt = (
-    "Given a chat history and the latest user question "
-    "which might reference context in the chat history, "
-    "formulate a standalone question which can be understood "
-    "without the chat history. Do NOT answer the question, "
-    "just reformulate it if needed and otherwise return it as is."
-    "For example:"
-    "Chat History - 1.when is world heart day?"
-    "Input - how many deaths"
-    "Answer - how many deaths related to heart attributed disease"
+    "Given the above conversation, generate a search query to look up to get information relevant to the conversation"
 )
 
 contextualize_q_prompt = ChatPromptTemplate.from_messages(
@@ -126,8 +118,12 @@ llm = AzureChatOpenAI(
 prompt_search_query = ChatPromptTemplate.from_messages([
     MessagesPlaceholder(variable_name="chat_history"),
     ("user", "{input}"),
-    ("user",
-     "Given the above conversation, generate a search query to look up to get information relevant to the conversation")
+    ("system",
+     """
+     Given the conversation chat_history so far, consider previous questions and answers to 
+     generate a search query that retrieves information most relevant to the overall topic or question.
+     Considering the conversation so far, suggest a search query that could be helpful for the user.
+     """)
 ])
 
 history_aware_retriever = langchain.chains.history_aware_retriever.create_history_aware_retriever(
@@ -206,16 +202,16 @@ def is_greeting(sentence):
     # Normalize the query
     normalized_query = sentence.lower()
 
-    if any(greet in normalized_query for greet in greeting):
+    if normalized_query in greeting:
         return "Hello! How can I assist you today?", True
 
-    if any(inquiry in normalized_query for inquiry in general_inquiries):
+    if normalized_query in general_inquiries:
         return "I'm an AI assistant, here to help you with your questions.", True
 
-    if any(thanks in normalized_query for thanks in thank_you):
+    if normalized_query in thank_you:
         return "You're welcome!", True
 
-    if any(end_phrase in normalized_query for end_phrase in conversation_enders):
+    if normalized_query in conversation_enders:
         return "Goodbye! Have a great day.", True
 
     return "", False
