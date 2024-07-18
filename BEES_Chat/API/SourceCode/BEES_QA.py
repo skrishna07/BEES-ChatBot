@@ -99,7 +99,7 @@ qa_retriever = vectorstore.as_retriever(
 llm = AzureChatOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
     azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
-    openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"), temperature=1, max_tokens=1000
+    openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"), temperature=1.5, max_tokens=1000
 )
 
 prompt_search_query = ChatPromptTemplate.from_messages([
