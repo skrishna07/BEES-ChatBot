@@ -96,19 +96,6 @@ qa_retriever = vectorstore.as_retriever(
     return_source_documents=True,
 )
 
-### Contextualize question ###
-contextualize_q_system_prompt = (
-    "Given the above conversation, generate a search query to look up to get information relevant to the conversation"
-)
-
-contextualize_q_prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system", contextualize_q_system_prompt),
-        MessagesPlaceholder("chat_history"),
-        ("human", "{input}"),
-    ]
-)
-
 llm = AzureChatOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
     azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
@@ -120,7 +107,7 @@ prompt_search_query = ChatPromptTemplate.from_messages([
     ("user", "{input}"),
     ("system",
      """
-     Given the conversation chat_history so far, consider previous questions and answers to 
+     Given the conversation history so far, consider previous questions and answers to 
      generate a search query that retrieves information most relevant to the overall topic or question.
      Considering the conversation so far, suggest a search query that could be helpful for the user.
      """)
@@ -131,41 +118,42 @@ history_aware_retriever = langchain.chains.history_aware_retriever.create_histor
 
 ### Answer question ###
 system_prompt = ("""
-You are a highly knowledgeable and concise assistant specializing in question-answering tasks. Please follow these guidelines:
+You are a highly knowledgeable and concise assistant specializing in Bees chatbot question-answering tasks. Please follow these guidelines:
+ 
 1. Answer only with relevant information derived from the provided context.
 2. Provide precise and concise answers within the context.
-4. Ensure your answers are grammatically correct and complete sentences.
-5. If the context does not contain the answer, state "Sorry, I don't have information."
-6. Do not assume or infer information that is not explicitly mentioned in the context.
-7. Do not include personal opinions or interpretations.
-8. Avoid redundant information; be direct and to the point.
-9. Prioritize clarity and relevance in your answers.
-10. Cite specific parts of the context when forming your answer.
-11. Avoid using ambiguous language; be as specific as possible.
-12. If there are multiple relevant pieces of information in the context, integrate them into a cohesive answer.
-13. If a question is ambiguous, state the ambiguity and request clarification.
-14. Do not provide general knowledge or background information unless explicitly requested.
-15. If the answer requires multiple parts, number each part clearly
-18. Avoid greetings, sign-offs, and any conversational fillers.
-19. Avoid the greetings or general queries like below content and state 'How can i assist you'
-    greeting = ["hello", "hi", "hey", "good morning", "good afternoon", "good evening"]
-    general_inquiries = ["how are you", "what's up", "how's it going", "what's new"]
-20. Avoid general knowledge questions and,state "Sorry, I don't have information."
-21. If the question is related to bus schedules or routes, provide the answer in below html table format.
-    <table>
-      <tr>
-        <th>Area</th>
-        <th>Time</th>
-      </tr>
-    </table>
-22. Avoid Request for assistance, informal queries, general queries and state 'Sorry, I don't have information.'
-23. Avoid feedback and state 'You're welcome! I am BeesChat Assistant, How can i assist you'
-24. If the question is related to route number or bus number fetch the route number in context and provide the answer.
-25. Remove the word context states in the answer.
-Context: {context}
-
+3. Ensure your answers are grammatically correct and complete sentences.
+4. If the context does not contain the exact answer, use related information and synonyms to provide the most relevant answer possible. If no related information is found, state "Sorry, I don't have information."
+5. Do not assume or infer information that is not explicitly mentioned in the context.
+6. Do not include personal opinions or interpretations.
+7. Avoid redundant information; be direct and to the point.
+8. Prioritize clarity and relevance in your answers.
+9. Cite specific parts of the context when forming your answer.
+10. Avoid using ambiguous language; be as specific as possible.
+11. If there are multiple relevant pieces of information in the context, integrate them into a cohesive answer.
+12. If a question is ambiguous, state the ambiguity and request clarification.
+13. Do not provide general knowledge or background information unless explicitly requested.
+14. If the answer requires multiple parts, number each part clearly.
+15. If a question relates to the following categories, provide the appropriate response with Bees in it:
+    - greeting
+    - general inquiry
+    - conversation ender
+    - thank you
+16. Avoid general knowledge questions, and state "Sorry, I don't have information."
+17. If the question is related to bus schedules or routes, provide the answer in the following HTML table format:
+<table>
+<tr>
+<th>Area</th>
+<th>Time</th>
+</tr>
+</table>
+18. If the question is related to a route number or bus number, fetch the route number in context and provide the answer.
+19. Remove the phrase "context states" from the answer.
+20. Provide relevant answers for synonyms found in the context.
+ 
 **Stay on topic:** Answer the question based solely on the information in the context. Do not use any outside knowledge.
-
+ 
+Context: {context}
 """)
 
 qa_prompt = ChatPromptTemplate.from_messages(
@@ -189,34 +177,6 @@ QA_chain = RunnableWithMessageHistory(
 )
 
 
-def is_greeting(sentence):
-    # Simple rule-based system for greetings and general inquiries
-    # Simple rule-based system for greetings and general inquiries
-    greeting = ["hello", "hi", "hey", "good morning", "good afternoon", "good evening", "howdy", "greetings"]
-    general_inquiries = ["how are you", "what's up", "how's it going", "what's new", "tell me about yourself",
-                         "how's your day", "what's going on"]
-    thank_you = ["thank you", "thanks a lot", "thanks", "much appreciated", "thank you so much", "thank you very much"]
-    conversation_enders = ["goodbye", "bye", "see you later", "talk to you soon", "take care", "have a good one",
-                           "see you", "until next time", "farewell"]
-
-    # Normalize the query
-    normalized_query = sentence.lower()
-
-    if normalized_query in greeting:
-        return "Hello! How can I assist you today?", True
-
-    if normalized_query in general_inquiries:
-        return "I'm an AI assistant, here to help you with your questions.", True
-
-    if normalized_query in thank_you:
-        return "You're welcome!", True
-
-    if normalized_query in conversation_enders:
-        return "Goodbye! Have a great day.", True
-
-    return "", False
-
-
 def post_process_answer(context, answer, link):
     # Ensure answer is only derived from the context
     for content in ["does not provide", "not found", "does not contain", "not provided", "does not mention",
@@ -228,12 +188,28 @@ def post_process_answer(context, answer, link):
     return answer, link
 
 
+def handle_greet(human):
+    messages = [
+        (
+            "system",
+            "You are a highly knowledgeable and concise assistant specializing in Bees chatbot greetings handler: " \
+            "Provide response for the query."
+            "If question is not related to greeting, general queries, thanks or conversation ends State 'Sorry, I don't have information.'"
+            "Avoid questions other than above categories, State 'Sorry, I don't have information.'"
+            "Along with greetings if any questions is asked, then State 'Sorry, I don't have information.'",
+        ),
+        ("human", human),
+    ]
+    ai_msg = llm.invoke(messages)
+    return ai_msg.content
+
+
 def AzureCosmosQA(human, session_id):
     try:
         with langchain_community.callbacks.get_openai_callback() as cb:
-            greet, is_greet = is_greeting(human)
-            if is_greet:
-                return greet, cb.total_tokens, cb.total_cost, ''
+            result = handle_greet(human)
+            if "don't have" not in result:
+                return result, cb.total_tokens, cb.total_cost, ''
             response = QA_chain.invoke(
                 {"input": human},
                 config={
@@ -241,12 +217,7 @@ def AzureCosmosQA(human, session_id):
                 },
             )
             source_links = [doc.metadata['source'] for doc in response["context"] if 'source' in doc.metadata]
-            # link_counts = collections.Counter(source_links)
-            # source_link, most_common_count = link_counts.most_common(1)[0]
             context = [doc.page_content for doc in response["context"]]
-            print("\n\n\n")
-            print(context)
-            print("\n")
             response = response["answer"]
             print(response)
             similarity = text_similarity(str(context), response)
@@ -256,7 +227,7 @@ def AzureCosmosQA(human, session_id):
                 source_link = source_links[0]
             else:
                 source_link = ''
-                response = "Sorry, I don't have information. Could you please provide more precise question"
+                # response = "Sorry, I don't have information. Could you please provide more precise question"
             if "<table>" not in response:
                 if similarity < 0.075:
                     source_link = ''

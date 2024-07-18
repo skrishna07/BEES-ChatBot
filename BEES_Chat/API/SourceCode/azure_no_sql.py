@@ -4,7 +4,10 @@ import itertools
 import uuid
 import warnings
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple
-
+import nltk
+from nltk.corpus import wordnet as wn
+from nltk.corpus import stopwords
+from collections import Counter
 import langchain_core.runnables
 import numpy as np
 from langchain_core.documents import Document
@@ -279,7 +282,7 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
             k: int = 4,
     ) -> List[Tuple[Document, float]]:
         query = (
-            "SELECT TOP {} c.id, c.text,c.source,c.category, VectorDistance(c.{}, {}) AS "
+            "SELECT TOP {} c.id, c.text,c.source,c.category,VectorDistance(c.{}, {}) AS "
             "SimilarityScore FROM c ORDER BY VectorDistance(c.{}, {})".format(
                 k,
                 self._embedding_key,
@@ -288,25 +291,39 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
                 embeddings,
             )
         )
+
         docs_and_scores = []
-        # query2 = keyword_query(user_query,k)
         items1 = list(
             self._container.query_items(query=query, enable_cross_partition_query=True)
         )
-        # items2 = list(
-        #     self._container.query_items(query=query2, enable_cross_partition_query=True)
-        # )
-        # Efficient merging using chain from itertools
-        # items = list(itertools.chain(items1, items2))
-        # print(items)
+        source = ''
         for item in items1:
+            source = item["source"]
+        print(source)
+        if "C:" in source:
+            source = source.replace("\\", "\\\\")
+        query2 = (
+            "SELECT TOP 3 c.id, c.text,c.source,c.category,VectorDistance(c.{}, {}) AS "
+            "SimilarityScore FROM c WHERE c.source = '{}' ORDER BY VectorDistance(c.{}, {})".format(
+                self._embedding_key,
+                embeddings,
+                source,
+                self._embedding_key,
+                embeddings,
+            )
+        )
+        items2 = list(
+            self._container.query_items(query=query2, enable_cross_partition_query=True)
+        )
+        for item in items2:
             text = item["text"]
-            text = str(text).replace("\n", " ")
+            print("\n\n")
+            print(text)
+            text = str(text).replace("\n", "")
             if text == '©':
                 continue
             score = item["SimilarityScore"]
             print("Score- ", score)
-            link = item["source"]
             meta = {"source": item["source"], "category": item["category"]}
             docs_and_scores.append(
                 (Document(page_content=f"{text}", metadata=meta), score))
@@ -324,6 +341,7 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
     def similarity_search(
             self, query: str, k: int = 4, **kwargs: Any
     ) -> List[Document]:
+        print("query", query)
         docs_and_scores = self.similarity_search_with_score(query, k=k)
 
         return [doc for doc, _ in docs_and_scores]
