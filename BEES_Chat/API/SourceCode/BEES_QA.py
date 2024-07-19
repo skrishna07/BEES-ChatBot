@@ -99,7 +99,7 @@ qa_retriever = vectorstore.as_retriever(
 llm = AzureChatOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
     azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
-    openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"), temperature=1.5, max_tokens=500
+    openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"), temperature=0.5, max_tokens=500
 )
 
 prompt_search_query = ChatPromptTemplate.from_messages([
@@ -180,7 +180,7 @@ QA_chain = RunnableWithMessageHistory(
 def post_process_answer(context, answer, link):
     # Ensure answer is only derived from the context
     for content in ["does not provide", "not found", "does not contain", "not provided", "does not mention",
-                    "does not"]:
+                    "does not", "don't have"]:
         if content.lower() in answer.lower():
             return "Sorry, I don't have information. Could you please provide more precise question", ''
     if "BeesChat Assistant" in answer or "unable to" in answer or "feel free" in answer or "to ask" in answer or "How can I help you" in answer or "assist you" in answer:
@@ -228,10 +228,10 @@ def AzureCosmosQA(human, session_id):
             else:
                 source_link = ''
                 # response = "Sorry, I don't have information. Could you please provide more precise question"
-            if "<table>" not in response:
-                if similarity < 0.075:
-                    source_link = ''
-                    response = "Sorry, I don't have information. Could you please provide more precise question"
+            # if "<table>" not in response:
+            #     if similarity < 0.075:
+            #         source_link = ''
+            #         response = "Sorry, I don't have information. Could you please provide more precise question"
             source_link = re.sub(r'.*Files', '', source_link)
             response, source_link = post_process_answer(str(context), response, source_link)
             print(f"Total Tokens: {cb.total_tokens}")
