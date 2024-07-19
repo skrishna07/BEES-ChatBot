@@ -2,6 +2,7 @@ import time
 
 import streamlit as st
 import requests
+import streamlit_javascript
 
 chat_history = []
 
@@ -13,7 +14,7 @@ def call_api(user_message, ip, session_id):
     # Send POST request with user message as data
     data = {"query": user_message, "ip_address": ip,
             "session_id": session_id}
-    headers = {"Authorization": "token e3a5cdae0bc4b6404a2485434561c2924896ae3d"}
+    headers = {"Authorization": "token f264b428d4e998383a15e667fb4050a49e9b2dc7"}
     response = requests.post(api_url, json=data, headers=headers)
     # Check for successful response
     if response.status_code == 200:
@@ -21,20 +22,25 @@ def call_api(user_message, ip, session_id):
     else:
         return "API Error: " + str(response.status_code)
 
-
-def get_ip():
+def get_client_ip():
+    url = 'https://api.ipify.org?format=json'
+    script = (f'await fetch("{url}"). then('
+              f'function(response) {{'
+              f'return response.json();'
+              f'}})')
     try:
-        response = requests.get('https://api.ipify.org?format=json')
-        return response.json()['ip']
-    except requests.RequestException as e:
-        st.error(f"Error fetching IP address: {e}")
-        return None
+        result = streamlit_javascript.st_javascript(script)
+        if isinstance(result, dict) and 'ip' in result:
+            return result['ip']
+    except:
+        pass
+    return None
 
 
 def main():
     st.set_page_config(page_title="BEES Chat", page_icon=":books:")
     st.title("BEES CHATBOT")
-    ip = get_ip()
+    ip = get_client_ip()
     if "session_id" not in st.session_state:
         st.session_state.session_id = None
     if "chat_history" not in st.session_state:
