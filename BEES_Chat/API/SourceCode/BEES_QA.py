@@ -228,10 +228,10 @@ def AzureCosmosQA(human, session_id):
             else:
                 source_link = ''
                 # response = "Sorry, I don't have information. Could you please provide more precise question"
-            # if "<table>" not in response:
-            #     if similarity < 0.075:
-            #         source_link = ''
-            #         response = "Sorry, I don't have information. Could you please provide more precise question"
+            if "<table>" not in response:
+                if similarity < 0.075:
+                    source_link = ''
+                    response = "Sorry, I don't have information. Could you please provide more precise question"
             source_link = re.sub(r'.*Files', '', source_link)
             response, source_link = post_process_answer(str(context), response, source_link)
             print(f"Total Tokens: {cb.total_tokens}")
