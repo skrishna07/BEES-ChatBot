@@ -118,7 +118,7 @@ history_aware_retriever = langchain.chains.history_aware_retriever.create_histor
 
 ### Answer question ###
 system_prompt = ("""
-You are a highly knowledgeable and concise assistant specializing in Bees chatbot question-answering tasks. Please follow these guidelines:
+You are a highly knowledgeable and concise assistant specializing in Beep chatbot question-answering tasks. Please follow these guidelines:
  
 1. Answer only with relevant information derived from the provided context.
 2. Provide precise and concise answers within the context.
@@ -134,7 +134,7 @@ You are a highly knowledgeable and concise assistant specializing in Bees chatbo
 12. If a question is ambiguous, state the ambiguity and request clarification.
 13. Do not provide general knowledge or background information unless explicitly requested.
 14. If the answer requires multiple parts, number each part clearly.
-15. If a question relates to the following categories, provide the appropriate response with Bees in it:
+15. If a question relates to the following categories, provide the appropriate response with Beep in it:
     - greeting
     - general inquiry
     - conversation ender
@@ -183,7 +183,7 @@ def post_process_answer(context, answer, link):
                     "does not", "don't have"]:
         if content.lower() in answer.lower():
             return "Sorry, I don't have information. Could you please provide more precise question", ''
-    if "BeesChat Assistant" in answer or "unable to" in answer or "feel free" in answer or "to ask" in answer or "How can I help you" in answer or "assist you" in answer:
+    if "BeepChat Assistant" in answer or "unable to" in answer or "feel free" in answer or "to ask" in answer or "How can I help you" in answer or "assist you" in answer:
         return answer, ''
     return answer, link
 
@@ -192,7 +192,7 @@ def handle_greet(human):
     messages = [
         (
             "system",
-            "You are a highly knowledgeable and concise assistant specializing in Bees chatbot greetings handler: " \
+            "You are a highly knowledgeable and concise assistant specializing in Beep chatbot greetings handler: " \
             "Provide response for the query."
             "If question is not related to greeting, general queries, thanks or conversation ends State 'Sorry, I don't have information.'"
             "Avoid questions other than above categories, State 'Sorry, I don't have information.'"
