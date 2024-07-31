@@ -90,6 +90,10 @@
   .custom-card-height {
     height: 110px; /* Set your desired height here */
   }
+  .total-value {
+    text-align: center;
+    vertical-align: middle;
+  }
   
   </style>
   <!-- Specific CSS goes HERE -->
@@ -289,10 +293,9 @@
                   return acc + parseFloat(val);
               }, 0);
   
-              // Update footer
-              $(api.column(4).footer()).html(tokensUsedTotal);
-              $(api.column(5).footer()).html(tokensCostTotal.toFixed(4) + ' $');
-              }
+              document.getElementById('totalTokensUsage').innerText = tokensUsedTotal;
+              document.getElementById('totalTokensAmount').innerText = tokensCostTotal.toFixed(4) + ' $';
+            }
         });
     
 
