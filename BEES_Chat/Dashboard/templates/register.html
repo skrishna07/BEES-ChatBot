@@ -1,0 +1,128 @@
+
+{% extends 'layouts/base-fullscreen.html' %}
+
+{% block title %} Register {% endblock title %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+    <!-- Page content -->
+    <div class="container mt--8 pb-2">
+      <!-- Table -->
+      <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+        
+          <div class="card bg-secondary shadow border-0">
+            <div class="card-header bg-transparent pb-2">
+              <div class="text-muted text-center mt-2 mb-1">
+                Sign Up
+              </div>
+            </div>
+            <div class="card-body px-lg-3 py-lg-3">
+              <div class="text-center text-muted mb-3">
+
+                {% if msg %}
+                  <small>{{ msg | safe }}</small>
+                {% else %}
+                  Add your credentials
+                {% endif %}  
+              
+              </div>
+
+              {% if not success %}
+
+            <form method="POST" action="{% url 'register' %}">
+                  {% csrf_token %}
+            
+                  <div class="form-group">
+                    <div class="input-group input-group-alternative mb-3">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="ni ni-hat-3"></i></span>
+                      </div>
+                      <input type="text" name="{{form.username.name}}" placeholder="Enter your username" class="form-control" value="{{form.username.value}}">
+                    </div>
+                  </div>
+                  <span class="text-danger">{{ form.username.errors }}</span>
+
+                  <div class="form-group">
+                    <div class="input-group input-group-alternative mb-3">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="ni ni-email-83"></i></span>
+                      </div>
+                      <input type="email" name="{{form.email.name}}" class="form-control" placeholder="Enter your email" value="{{form.email.value}}">
+                    </div>
+                  </div>
+                  <span class="text-danger">{{form.email.errors}}</span>
+
+                  <div class="form-group">
+                    {% comment %} <label for="{{form.role.id_for_label}}">Role<span style="color: red;">*</span></label> {% endcomment %}
+                    <div class="input-group-prepend">
+                      <span class="input-group-text"><i class="ni ni-hat-3"></i></span>
+                      <select class="form-control" name="{{form.role.name}}" id="">
+                        <option value="" {% if not form.role.value %}selected{% endif %}>Please select role</option>
+                            {% for value, label in form.role.field.choices %}
+                                <option value="{{ value }}" {% if form.role.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                    </select>
+                    </div>
+                    
+                    {% if form.role.errors %}
+                    <span class="text-danger">{{ form.role.errors }}</span>
+                    {% endif %}
+                  </div>
+
+
+                  <div class="form-group">
+                    <div class="input-group input-group-alternative">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="ni ni-lock-circle-open"></i></span>
+                      </div>
+                      <input type="password" name="{{form.password1.name}}" placeholder="Enter your password" class="form-control" value="{{form.password1.value}}">
+                    </div>
+                  </div>
+                  <span class="text-danger">{{ form.password1.errors }}</span>
+
+                  <div class="form-group">
+                    <div class="input-group input-group-alternative">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="ni ni-lock-circle-open"></i></span>
+                      </div>
+                      <input type="password" name="{{form.password2.name}}" placeholder="Confirm Password" class="form-control" value="{{form.password2.value}}">
+                    </div>
+                  </div>
+                   <span class="text-danger">{{form.password2.errors}}</span>
+
+                  <div class="row my-4">
+                    <div class="col-12">
+                      <div class="custom-control custom-control-alternative custom-checkbox">
+                        <input class="custom-control-input" id="customCheckRegister" type="checkbox">
+                        <label class="custom-control-label" for="customCheckRegister">
+                          <span class="text-muted">I agree with the <a href="#!">Privacy Policy</a></span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="text-center">
+                    <button type="submit" class="btn btn-primary mt-4">Create account</button>
+                  </div>
+                </form>
+
+              {% endif %}  
+  
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock content %}
+
+<!-- Specific JS goes HERE --> 
+{% block javascripts %}{% endblock javascripts %}
+
+
+

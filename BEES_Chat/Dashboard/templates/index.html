@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% block start %}
+   
+    <a href="/login" class="btn btn-success">Login</a> 
+    <a href="/signup" class="btn btn-danger">Register</a>
+    <div class="container">
+        <hr>
+        <h1 class="text-danger">Employee List</h1><hr><br>  
+    <table class="table  table-striped table-bordered" >
+        <thead class="thead-dark">
+          <tr>
+            <th scope="col">S No</th>
+            <th scope="col">Name</th>
+            <th scope="col">Salary</th>
+            <th scope="col">Age</th>
+            <th scope="col" width="45px">Experience(Year)</th>
+            <th scope="col" width="20%">Is Eligible</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+          {% for employee in employees %}
+          <tr>
+            <th scope="row">{{forloop.counter}}</th>
+            <td>{{employee.name}}</td>
+            <td>{{employee.salary}}</td>
+            <td>{{employee.age}}</td>
+            <td>{{employee.experience}}</td>
+            <td>
+                {% load custom_filters %}
+                {% if employee.experience|gte:3 %}
+                👍
+                {% else %}
+                👎
+                {% endif%}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  {% endblock %}

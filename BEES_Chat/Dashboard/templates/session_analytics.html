@@ -1,0 +1,144 @@
+{% extends 'layouts/base.html' %} 
+{% block title %} Session Analytics {% endblock title%}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}
+
+{% endblock stylesheets %} 
+{% block content %}
+
+<!-- Header -->
+<div class="header bg-primary pb-6">
+  <div class="container-fluid">
+    <div class="header-body">
+      <!-- Card stats -->
+    </div>
+  </div>
+</div>
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
+<!-- Page content -->
+<div class="container-fluid mt--6">
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <!-- Card header -->
+        <div class="card-header border-0">
+          <h3 class="mb-0">Session Analytics</h3>
+        </div>
+        <br>
+        <div class="row">
+            <div class="col-xl-1 col-md-1"></div>
+            <div class="col-xl-3 col-md-6">
+              <div class="card card-stats custom-card-height">
+                <!-- Card body -->
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col">
+                      <h6 class="card-title text-uppercase text-muted mb-0">Total Sessions</h6>
+                      <span class="h2 font-weight-bold mb-0" id="total_sessions"></span>
+                    </div>
+                    <div class="col-auto">
+                      <div class="icon icon-shape bg-gradient-red text-white rounded-circle shadow">
+                        <i class="ni ni-chart-pie-35"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            
+            <div class="col-xl-3 col-md-6">
+              <div class="card card-stats custom-card-height">
+                <!-- Card body -->
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col">
+                      <h6 class="card-title text-uppercase text-muted mb-0">Average Sessions Per User</h6>
+                      <span class="h2 font-weight-bold mb-0" id="average_sessions_per_ip"></span>
+                    </div>
+                    <div class="col-auto">
+                      <div class="icon icon-shape bg-gradient-info text-white rounded-circle shadow">
+                        
+                        <i class="fa fa-chart-area"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="card card-stats custom-card-height">
+                  <!-- Card body -->
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col">
+                        <h6 class="card-title text-uppercase text-muted mb-0">Average Tokens per Session</h6>
+                        <span class="h2 font-weight-bold mb-0" id="average_tokens_per_session"></span>
+                      </div>
+                      <div class="col-auto">
+                        <div class="icon icon-shape bg-gradient-red text-white rounded-circle shadow">
+                          <i class="ni ni-chart-bar-32"></i>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              
+          </div>
+          
+        <div class="mt-3 ml-3">
+          <label for="from-date">From: </label>
+          <input type="text" id="from-date" class="datepicker" value="{{ dates.seven_days_ago }}"/>
+          <label for="to-date">To: </label>
+          <input type="text" id="to-date" class="datepicker" value="{{ dates.today }}"/>
+          <button class="btn btn-success" id="filter">Filter</button>
+          <button class="btn btn-danger" id="resetBtn">Reset</button>
+        </div>
+        <br /><br />
+        <table id="chatHistory" class="display">
+          <thead>
+            <tr>
+              <th colspan="4">Total:</th>
+              <th id="totalTokensUsage" class="total-value"></th>
+              <th id="totalTokensAmount" class="total-value"></th>
+              <th></th>
+            </tr>
+            <tr>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Session ID</th>
+              <th>IP Address</th>
+              <th>Token Used</th>
+              <th>Tokens Cost $</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Populate this with chat history data -->
+          </tbody>
+          
+        </table>
+      </div>
+    </div>
+    <!-- Dark table -->
+  </div>
+
+  
+
+  {% endblock content %}
+
+  <!-- Specific JS goes HERE -->
+  {% block javascripts %}
+  
+
+  <script>
+
+        
+  </script>
+  {% endblock javascripts %}
+</div>
