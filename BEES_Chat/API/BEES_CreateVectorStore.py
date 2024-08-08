@@ -31,13 +31,15 @@ class BEES_Main:
                                          Database=os.getenv('BEES_DB'),
                                          Username=os.getenv('BEES_Username'),
                                          Password=os.getenv('BEES_Password'))
+        
         self.BEES_Database.connect()
         self.Logger = Logger()
         self.Cosmos_Client = CosmosDBManager(endpoint=os.getenv('WebChat_EndPoint'),
                                              master_key=os.getenv('WebChat_Key'))
-        self.ChatMainContainer = self.Cosmos_Client.create_container(database_id=os.getenv('WebChat_DB'),
-                                                                     container_id='BEES_ChatMain',
-                                                                     partition_key_path="/ID")
+        
+        self.Cosmos_Client.create_database_if_not_exists(item = os.getenv('WebChat_DB')) 
+
+        self.ChatMainContainer = self.Cosmos_Client.create_container(database_id=os.getenv('WebChat_DB'),container_id='BEES_ChatMain',partition_key_path="/ID")
 
     def GetProcessData(self):
         try:

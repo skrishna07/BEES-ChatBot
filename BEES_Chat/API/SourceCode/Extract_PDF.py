@@ -58,14 +58,11 @@ def pdf_page_to_text(pdf_document, pdf_reader, page_num):
 def process_pdf(file_path, category, id):
     try:
         data = []
-        pdf_document = fitz.open(file_path)
-        pdf_reader = PdfReader(file_path)
-        for page_num in range(len(pdf_reader.pages)):
-            text = pdf_page_to_text(pdf_document, pdf_reader, page_num)
-            text = text.replace('\\n', '')
-            text = text.replace('@', '')
-            metadata = {'source': file_path, 'page': page_num, 'category': category, 'unique_id': id}
-            data.append(Document(page_content=text, metadata=metadata))
+        text = analyze_read(file_path)
+        text = text.replace('\\n', '')
+        text = text.replace('@', '')
+        metadata = {'source': file_path, 'category': category, 'unique_id': id}
+        data.append(Document(page_content=text, metadata=metadata))
         return data
     except Exception as e:
         error_details = logger.log(f"Error occurred while processing PDF: {e}", "Error")
