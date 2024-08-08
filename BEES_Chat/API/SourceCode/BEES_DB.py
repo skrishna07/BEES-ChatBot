@@ -19,7 +19,7 @@ class SQLDatabase:
                     f"DRIVER={{SQL Server}};SERVER={self.server};DATABASE={self.database};UID={self.username};PWD={self.password}")
             else:
                 self.connection = pyodbc.connect(
-                    f"DRIVER={{SQL Server}};SERVER=localhost;DATABASE={self.database};Trusted_Connection=yes;"
+                    f"DRIVER={{SQL Server}};SERVER=BE-APP1-VM01;DATABASE={self.database};Trusted_Connection=yes;"
                 )
             self.cursor = self.connection.cursor()
             self.logger.log(f"Database connected successfully", "Info")

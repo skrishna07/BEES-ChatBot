@@ -20,8 +20,8 @@ class CosmosDBManager:
         try:
             container = database.create_container(
                 id=container_id,
-                partition_key=PartitionKey(path=partition_key_path),
-                offer_throughput=offer_throughput
+                partition_key=PartitionKey(path=partition_key_path)
+                #offer_throughput=offer_throughput
             )
             logger.log(f"Container '{container_id}' created in database '{database_id}'.", "Info")
             return container
@@ -40,6 +40,13 @@ class CosmosDBManager:
         except exceptions as e:
             error_details = logger.log(f"Error inserting container: {e}", "Error")
             raise Exception(error_details)
+        
+    def create_database_if_not_exists(self, item):
+        # Create a database if it doesn't exist
+        try:
+            database = self.client.create_database_if_not_exists(id = item)
+        except exceptions.CosmosResourceExistsError:
+            database = self.client.get_database_client(database= item)
 
     def update_record(self, container, item_id, updated_data):
         try:

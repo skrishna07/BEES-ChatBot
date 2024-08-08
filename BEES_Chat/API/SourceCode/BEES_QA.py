@@ -47,7 +47,7 @@ os.environ["AZURE_OPENAI_API_KEY"] = os.getenv('Azure_OPENAI_API_KEY')
 os.environ["AZURE_OPENAI_ENDPOINT"] = os.getenv('Azure_OPENAI_API_BASE')
 os.environ["AZURE_OPENAI_API_VERSION"] = "2023-09-15-preview"
 os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"] = "gpt35"
-os.environ["AZURE_EMBEDDINGS_DEPLOYMENT_NAME"] = "bradsol-ada-embeddings"
+os.environ["AZURE_EMBEDDINGS_DEPLOYMENT_NAME"] = "ada-embeddings"
 
 indexing_policy = {
     "indexingMode": "consistent",
