@@ -16,10 +16,10 @@ cosmos_collection = os.getenv('WebChatChunk_Container')
 cosmos_vector_property = "embedding"
 os.environ["AZURE_OPENAI_API_KEY"] = os.getenv('Azure_OPENAI_API_KEY')
 os.environ["AZURE_OPENAI_ENDPOINT"] = os.getenv('Azure_OPENAI_API_BASE')
-os.environ["AZURE_OPENAI_API_VERSION"] = "2023-09-15-preview"
-os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"] = "gpt35"
-os.environ["AZURE_EMBEDDINGS_MODEL_NAME"] = "text-embedding-ada-002"
-os.environ["AZURE_EMBEDDINGS_DEPLOYMENT_NAME"] = "ada-embeddings"
+os.environ["AZURE_OPENAI_API_VERSION"] = os.getenv('Azure_OpenAIVersion')
+os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"] = os.getenv('Azure_OpenAIDeploymentName')
+os.environ["AZURE_EMBEDDINGS_DEPLOYMENT_NAME"] = os.getenv('Azure_EmbeddingDeploymentName')
+os.environ["AZURE_EMBEDDINGS_MODEL_NAME"] = os.getenv('Azure_EmbeddingModelName')
 
 
 indexing_policy = {

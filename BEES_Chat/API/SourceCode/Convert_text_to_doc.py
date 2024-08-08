@@ -36,6 +36,7 @@ def PageDoc(text_content, PageTitle, unique_id, category, URL):
         data = []
         # Parse the HTML content
         soup = BeautifulSoup(text_content, 'html.parser')
+        URL = f"https://beep.biologicale.com/{URL}"
         # Extract and print the text content
         text_content = soup.get_text()
         text_content = text_content.replace('\\n', '')

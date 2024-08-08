@@ -19,7 +19,7 @@ class SQLDatabase:
                     f"DRIVER={{SQL Server}};SERVER={self.server};DATABASE={self.database};UID={self.username};PWD={self.password}")
             else:
                 self.connection = pyodbc.connect(
-                    f"DRIVER={{SQL Server}};SERVER=BE-APP1-VM01;DATABASE={self.database};Trusted_Connection=yes;"
+                    f"DRIVER={{SQL Server}};SERVER={self.server};DATABASE={self.database};Trusted_Connection=yes;"
                 )
             self.cursor = self.connection.cursor()
             self.logger.log(f"Database connected successfully", "Info")
@@ -34,6 +34,13 @@ class SQLDatabase:
                 self.logger.log(f"Database disconnected successfully", "Info")
         except Exception as e:
             error_details = self.logger.log(f"Error DB close connection: {str(e)}", "Error")
+            raise Exception(error_details)
+
+    def restore_database(self):
+        try:
+            pass
+        except Exception as e:
+            error_details = self.logger.log(f"Error restore_database: {str(e)}", "Error")
             raise Exception(error_details)
 
     def insert_data(self, table, data):
