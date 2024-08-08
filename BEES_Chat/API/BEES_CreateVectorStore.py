@@ -98,7 +98,10 @@ class BEES_Main:
 
                         # Process Attachment
                         if Data["Type"] == "Attachment":
-                            filepath, file_exist = Download_AzureBlobFiles.Download_File(Data["FilePath"])
+                            filepath = os.path.join(os.getenv('Filepath'), Data["FilePath"])
+                            file_exist = os.path.exists(filepath)
+                            print(filepath)
+                            # filepath, file_exist = Download_AzureBlobFiles.Download_File(Data["FilePath"])
                             if file_exist:
                                 Pdf_content = Extract_PDF.process_documents(filepath, Data["Category"], Data["id"])
                                 if Pdf_content[0].page_content == '':
