@@ -1,5 +1,6 @@
 import collections
 import re
+import time
 from difflib import SequenceMatcher
 import langchain.chains.combine_documents
 import langchain.chains.history_aware_retriever
@@ -179,10 +180,10 @@ QA_chain = RunnableWithMessageHistory(
 
 def post_process_answer(context, answer, link):
     # Ensure answer is only derived from the context
-    for content in ["does not provide", "not found", "does not contain", "not provided", "does not mention",
-                    "does not", "don't have"]:
-        if content.lower() in answer.lower():
-            return "Sorry, I don't have information. Could you please provide more precise question", ''
+    # for content in ["does not provide", "not found", "does not contain", "not provided", "does not mention",
+    #                 "does not", "don't have"]:
+    #     if content.lower() in answer.lower():
+    #         return "Sorry, I don't have information. Could you please provide more precise question", ''
     if "BeepChat Assistant" in answer or "unable to" in answer or "feel free" in answer or "to ask" in answer or "How can I help you" in answer or "assist you" in answer:
         return answer, ''
     return answer, link
@@ -206,6 +207,7 @@ def handle_greet(human):
 
 def AzureCosmosQA(human, session_id):
     try:
+        start_time = time.time()
         with langchain_community.callbacks.get_openai_callback() as cb:
             result = handle_greet(human)
             if "don't have" not in result:
@@ -230,6 +232,7 @@ def AzureCosmosQA(human, session_id):
                 # response = "Sorry, I don't have information. Could you please provide more precise question"
             if "<table>" not in response:
                 if similarity < 0.075:
+                    print("score mismatched",similarity)
                     source_link = ''
                     response = "Sorry, I don't have information. Could you please provide more precise question"
             source_link = re.sub(r'.*Files', '', source_link)
@@ -238,6 +241,10 @@ def AzureCosmosQA(human, session_id):
             print(f"Prompt Tokens: {cb.prompt_tokens}")
             print(f"Completion Tokens: {cb.completion_tokens}")
             print(f"Total Cost (USD): ${cb.total_cost}")
+            end_time = time.time()
+            # Calculate the time difference
+            elapsed_time = end_time - start_time
+            print(f"Time elapsed between lines: {elapsed_time} seconds")
             return response, cb.total_tokens, cb.total_cost, source_link
     except Exception as e:
         error_details = logger.log(f"Error occurred in fetching response:{str(e)}", "Error")

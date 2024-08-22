@@ -317,13 +317,13 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
         )
         for item in items2:
             text = item["text"]
-            print("\n\n")
-            print(text)
+            # print("\n\n")
+            # print(text)
             text = str(text).replace("\n", "")
             if text == '©':
                 continue
             score = item["SimilarityScore"]
-            print("Score- ", score)
+            # print("Score- ", score)
             meta = {"source": item["source"], "category": item["category"]}
             docs_and_scores.append(
                 (Document(page_content=f"{text}", metadata=meta), score))
