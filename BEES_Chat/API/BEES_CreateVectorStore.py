@@ -25,21 +25,32 @@ def serialize_item(item):
     return item
 
 
+class Document:
+    def __init__(self, page_content, metadata):
+        self.page_content = page_content
+        self.metadata = metadata
+
+    def __repr__(self):
+        return f"Document(page_content='{self.page_content}', metadata={self.metadata})"
+
+
 class BEES_Main:
     def __init__(self):
         self.BEES_Database = SQLDatabase(Server=os.getenv('BEES_DBServer'),
                                          Database=os.getenv('BEES_DB'),
                                          Username=os.getenv('BEES_Username'),
                                          Password=os.getenv('BEES_Password'))
-        
+
         self.BEES_Database.connect()
         self.Logger = Logger()
         self.Cosmos_Client = CosmosDBManager(endpoint=os.getenv('WebChat_EndPoint'),
                                              master_key=os.getenv('WebChat_Key'))
-        
-        self.Cosmos_Client.create_database_if_not_exists(item = os.getenv('WebChat_DB')) 
 
-        self.ChatMainContainer = self.Cosmos_Client.create_container(database_id=os.getenv('WebChat_DB'),container_id='BEES_ChatMain',partition_key_path="/ID")
+        self.Cosmos_Client.create_database_if_not_exists(item=os.getenv('WebChat_DB'))
+
+        self.ChatMainContainer = self.Cosmos_Client.create_container(database_id=os.getenv('WebChat_DB'),
+                                                                     container_id='BEES_ChatMain',
+                                                                     partition_key_path="/ID")
 
     def GetProcessData(self):
         try:
@@ -103,7 +114,8 @@ class BEES_Main:
                             print(filepath)
                             # filepath, file_exist = Download_AzureBlobFiles.Download_File(Data["FilePath"])
                             if file_exist:
-                                Pdf_content = Extract_PDF.process_documents(filepath, Data["Category"], Data["id"])
+                                Pdf_content = Extract_PDF.process_documents(filepath, Data["Category"], Data["id"],
+                                                                            Data["policycode"], Data["policyname"])
                                 if Pdf_content[0].page_content == '':
                                     error_details = f'Data is empty - {Data["id"]}'
                                     self.updateException(Data, error_details, 'B')
@@ -111,6 +123,14 @@ class BEES_Main:
                                     continue
                                 else:
                                     AzureCosmosVectorStoreContianer.Load_ChunkData(Pdf_content)
+                                    if Data["Category"] == "Policy":
+                                        data = []
+                                        metadata = {'source': filepath, 'category': Data["Category"],
+                                                    'unique_id': Data["id"]}
+                                        data.append(
+                                            Document(page_content=Data["policycode"] + "-" + Data["policyname"],
+                                                     metadata=metadata))
+                                        AzureCosmosVectorStoreContianer.Load_ChunkData(data)
                             else:
                                 error_details = f'Attachment File not exists for - {Data["id"]}'
                                 self.updateException(Data, error_details, 'B')

@@ -20,7 +20,7 @@ def NewsDoc(html_content, NewsTitle, unique_id, category):
         soup = BeautifulSoup(html_content, 'html.parser')
         # Extract and print the text content
         text_content = soup.get_text()
-        file_path = f"https://beep.biologicale.com/News?.newsId={unique_id[5:]}"
+        file_path = f"News?newsId={unique_id[5:]}"
         text_content = text_content.replace('\\n', '')
         text_content = text_content.replace('@', '')
         metadata = {'source': file_path, 'category': category, 'unique_id': unique_id, 'NewsTitle': NewsTitle}
@@ -36,7 +36,7 @@ def PageDoc(text_content, PageTitle, unique_id, category, URL):
         data = []
         # Parse the HTML content
         soup = BeautifulSoup(text_content, 'html.parser')
-        URL = f"https://beep.biologicale.com/{URL}"
+        URL = str(URL)
         # Extract and print the text content
         text_content = soup.get_text()
         text_content = text_content.replace('\\n', '')

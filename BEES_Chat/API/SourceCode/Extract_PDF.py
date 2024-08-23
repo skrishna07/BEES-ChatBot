@@ -55,10 +55,11 @@ def pdf_page_to_text(pdf_document, pdf_reader, page_num):
         raise Exception(error_details)
 
 
-def process_pdf(file_path, category, id):
+def process_pdf(file_path, category, id, policycode, policyname):
     try:
         data = []
         text = analyze_read(file_path)
+        text = text + "\n" + "  " + policycode + "  " + policyname
         text = text.replace('\\n', '')
         text = text.replace('@', '')
         metadata = {'source': file_path, 'category': category, 'unique_id': id}
@@ -69,10 +70,11 @@ def process_pdf(file_path, category, id):
         raise Exception(error_details)
 
 
-def process_image(file_path, category, id):
+def process_image(file_path, category, id, policycode, policyname):
     try:
         data = []
         text = analyze_read(file_path)
+        text = text + "\n" + "  " + policycode + "  " + policyname
         text = text.replace('\\n', '')
         text = text.replace('@', '')
         metadata = {'source': file_path, 'category': category, 'unique_id': id}
@@ -83,13 +85,13 @@ def process_image(file_path, category, id):
         raise Exception(error_details)
 
 
-def process_documents(input_path, category, id):
+def process_documents(input_path, category, id, policycode, policyname):
     try:
         data = []
         if input_path.lower().endswith(".pdf"):
-            data.extend(process_pdf(input_path, category, id))
+            data.extend(process_pdf(input_path, category, id, policycode, policyname))
         elif input_path.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.gif')):
-            data.extend(process_image(input_path, category, id))
+            data.extend(process_image(input_path, category, id, policycode, policyname))
         return data
     except Exception as e:
         error_details = logger.log(f"Error occurred while processing attachment doc ocr: {e}", "Error")

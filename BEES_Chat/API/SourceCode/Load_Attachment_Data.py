@@ -17,6 +17,20 @@ def serialize_item(item):
     return item
 
 
+def get_policy_details(SQLDatabase, head_id):
+    try:
+        rows = SQLDatabase.select_data('Policy', (
+            "PolicyCode,PolicyName"), "id="+str(head_id))
+        logger.log("Attachment policy data successfully fetched", "Info")
+        if rows:
+            return rows[0]
+        else:
+            return rows
+    except Exception as e:
+        logger.log(f"Error fetching attachment data: {str(e)}", "Error")
+        raise
+
+
 def get_attachments_data(SQLDatabase):
     try:
         if os.getenv('InsertAllData') == 'Y':
@@ -65,6 +79,8 @@ def process_attachments(SQLDatabase, container):
             try:
                 head_id = attachment['HeadId']
                 file_category_id = attachment['FileCategoryId']
+                if file_category_id == 13:
+                    policydata = get_policy_details(SQLDatabase, head_id)
                 id = attachment['Id']
                 query = f"SELECT * FROM c WHERE c.id = 'Attachment_{id}-{file_category_id}-{head_id}'"
                 try:
@@ -72,6 +88,7 @@ def process_attachments(SQLDatabase, container):
                     items = list(query_items)
                 except:
                     items = []
+                    logger.log(f"Attachment data not exists in master: {str(e)}", "Error")
                 if not items:
                     if attachment['ChangedOn']:
                         ChangedOn = str(attachment['ChangedOn'].replace(microsecond=0))
@@ -105,7 +122,9 @@ def process_attachments(SQLDatabase, container):
                         "UpdatedBy": "",
                         "UpdatedOn": "",
                         "Category": Category,
-                        "ExceptionDetails": ""
+                        "ExceptionDetails": "",
+                        "policycode": policydata['PolicyCode'],
+                        "policyname": policydata['PolicyName']
                     }
                     container.create_item(body=serialize_item(new_item))
                 else:
