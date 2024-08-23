@@ -302,6 +302,8 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
         print(source)
         if "C:" in source:
             source = source.replace("\\", "\\\\")
+        if "D:" in source:
+            source = source.replace("\\", "\\\\")
         query2 = (
             "SELECT TOP 3 c.id, c.text,c.source,c.category,VectorDistance(c.{}, {}) AS "
             "SimilarityScore FROM c WHERE c.source = '{}' ORDER BY VectorDistance(c.{}, {})".format(
