@@ -81,6 +81,15 @@ def process_attachments(SQLDatabase, container):
                 file_category_id = attachment['FileCategoryId']
                 if file_category_id == 13:
                     policydata = get_policy_details(SQLDatabase, head_id)
+                    if policydata:
+                        policycode = policydata['PolicyCode']
+                        policyname = policydata['PolicyName']
+                    else:
+                        policycode = ''
+                        policyname = ''
+                else:
+                    policycode = ''
+                    policyname = ''
                 id = attachment['Id']
                 query = f"SELECT * FROM c WHERE c.id = 'Attachment_{id}-{file_category_id}-{head_id}'"
                 try:
@@ -123,8 +132,8 @@ def process_attachments(SQLDatabase, container):
                         "UpdatedOn": "",
                         "Category": Category,
                         "ExceptionDetails": "",
-                        "policycode": policydata['PolicyCode'],
-                        "policyname": policydata['PolicyName']
+                        "policycode": policycode,
+                        "policyname": policyname
                     }
                     container.create_item(body=serialize_item(new_item))
                 else:
