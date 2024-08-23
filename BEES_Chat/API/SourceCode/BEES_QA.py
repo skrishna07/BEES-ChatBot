@@ -236,6 +236,7 @@ def AzureCosmosQA(human, session_id):
                     source_link = ''
                     response = "Sorry, I don't have information. Could you please provide more precise question"
             source_link = re.sub(r'.*Files', '', source_link)
+            source_link = source_link.replace("D:\\Webapplication\\BEEP\\", "")
             response, source_link = post_process_answer(str(context), response, source_link)
             print(f"Total Tokens: {cb.total_tokens}")
             print(f"Prompt Tokens: {cb.prompt_tokens}")
