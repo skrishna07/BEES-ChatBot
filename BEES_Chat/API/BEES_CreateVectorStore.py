@@ -111,6 +111,8 @@ class BEES_Main:
                         if Data["Type"] == "Attachment":
                             filepath = os.path.join(os.getenv('Filepath'), Data["FilePath"])
                             file_exist = os.path.exists(filepath)
+                            if "InternalPages" in filepath or "News" in filepath:
+                                continue
                             print(filepath)
                             # filepath, file_exist = Download_AzureBlobFiles.Download_File(Data["FilePath"])
                             if file_exist:
