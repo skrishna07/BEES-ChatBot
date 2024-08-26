@@ -84,7 +84,7 @@ def process_pages(SQLDatabase, container):
                         RunFlag = "N"
                         IsActive = "False"
                     if int(page['MenuCategoryId']) == 0:
-                        RunFlag = "N"
+                        # RunFlag = "N"
                         Category = "PageMenu"
                     else:
                         Category = get_category_name(SQLDatabase, int(page['MenuCategoryId']),
@@ -119,7 +119,7 @@ def process_pages(SQLDatabase, container):
                             new_changed_on = page['ChangedOn'].replace(microsecond=0)
                             if new_changed_on > existing_changed_on:
                                 if int(page['MenuCategoryId']) == 0:
-                                    existing_item['RunFlag'] = 'N'
+                                    existing_item['RunFlag'] = 'Y'
                                 else:
                                     existing_item['RunFlag'] = 'Y'
                                 existing_item['IsActive'] = 'True'
@@ -131,7 +131,7 @@ def process_pages(SQLDatabase, container):
                             if page['ChangedOn']:
                                 new_changed_on = str(page['ChangedOn'].replace(microsecond=0))
                                 if int(page['MenuCategoryId']) == 0:
-                                    existing_item['RunFlag'] = 'N'
+                                    existing_item['RunFlag'] = 'Y'
                                 else:
                                     existing_item['RunFlag'] = 'Y'
                                 existing_item['IsActive'] = 'True'
