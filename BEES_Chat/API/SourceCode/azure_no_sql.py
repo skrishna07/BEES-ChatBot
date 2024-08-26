@@ -283,7 +283,7 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
     ) -> List[Tuple[Document, float]]:
         query = (
             "SELECT TOP {} c.id, c.text,c.source,c.category,VectorDistance(c.{}, {}) AS "
-            "SimilarityScore FROM c ORDER BY VectorDistance(c.{}, {})".format(
+            "SimilarityScore FROM c WHERE c.source not like '%D:\\Webapplication\\BEEP\\News%' ORDER BY VectorDistance(c.{}, {})".format(
                 k,
                 self._embedding_key,
                 embeddings,
