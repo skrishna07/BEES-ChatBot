@@ -112,6 +112,7 @@ class BEES_Main:
                             filepath = os.path.join(os.getenv('Filepath'), Data["FilePath"])
                             file_exist = os.path.exists(filepath)
                             if "InternalPages" in filepath or "News" in filepath:
+                                self.updateData(Data=Data)
                                 continue
                             print(filepath)
                             # filepath, file_exist = Download_AzureBlobFiles.Download_File(Data["FilePath"])
