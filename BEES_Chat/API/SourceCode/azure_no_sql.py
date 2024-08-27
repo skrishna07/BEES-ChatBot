@@ -281,7 +281,8 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
             embeddings: List[float],
             k: int = 4,
     ) -> List[Tuple[Document, float]]:
-        if user_query.lower() in "holiday" or user_query.lower() in "leave":
+        if "holiday" in user_query.lower():
+            print("user_query",user_query)
             query = (
                 "SELECT TOP {} c.id, c.text,c.source,c.category,VectorDistance(c.{}, {}) AS "
                 "SimilarityScore FROM c WHERE c.source like '%Holiday Calendar%' ORDER BY VectorDistance(c.{}, {})".format(
