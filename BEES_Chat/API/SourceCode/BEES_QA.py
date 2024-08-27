@@ -18,6 +18,7 @@ from langchain_core.chat_history import BaseChatMessageHistory
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from .Log import Logger
+import datetime
 
 from dotenv import load_dotenv
 
@@ -120,7 +121,7 @@ history_aware_retriever = langchain.chains.history_aware_retriever.create_histor
 ### Answer question ###
 system_prompt = ("""
 You are a highly knowledgeable and concise assistant specializing in Beep chatbot question-answering tasks. Please follow these guidelines:
- 
+
 1. Answer only with relevant information derived from the provided context.
 2. Provide precise and concise answers within the context.
 3. Ensure your answers are grammatically correct and complete sentences.
@@ -151,11 +152,13 @@ You are a highly knowledgeable and concise assistant specializing in Beep chatbo
 18. If the question is related to a route number or bus number, fetch the route number in context and provide the answer.
 19. Remove the phrase "context states" from the answer.
 20. Provide relevant answers for synonyms found in the context.
- 
+21. If the question relates to any upcoming, next, or previous holidays, including specific months, weeks, dates, days, or long weekends, refer only to the list of holidays provided in the context. Use the current calendar date to accurately determine and provide information based on the context.
+has context menu
 **Stay on topic:** Answer the question based solely on the information in the context. Do not use any outside knowledge.
- 
+
 Context: {context}
-""")
+Current Date:""" + str(datetime.date.today())
+                 )
 
 qa_prompt = ChatPromptTemplate.from_messages(
     [
@@ -231,8 +234,8 @@ def AzureCosmosQA(human, session_id):
                 source_link = ''
                 # response = "Sorry, I don't have information. Could you please provide more precise question"
             if "<table>" not in response:
-                if similarity < 0.075:
-                    print("score mismatched",similarity)
+                if similarity < 0.035:
+                    print("score mismatched", similarity)
                     source_link = ''
                     response = "Sorry, I don't have information. Could you please provide more precise question"
             source_link = re.sub(r'.*Files', '', source_link)
