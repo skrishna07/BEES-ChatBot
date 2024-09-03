@@ -112,6 +112,7 @@ prompt_search_query = ChatPromptTemplate.from_messages([
      Given the conversation history so far, consider previous questions and answers to 
      generate a search query that retrieves information most relevant to the overall topic or question.
      Considering the conversation so far, suggest a search query that could be helpful for the user.
+     If the same question has been asked previously, return the exact same query without reformatting.
      """)
 ])
 
@@ -208,13 +209,25 @@ def handle_greet(human):
     return ai_msg.content
 
 
+def contains_greeting(text):
+    # List of common greeting words
+    greetings = ['hello', 'hi', 'hey', 'greetings', 'good morning', 'good afternoon', 'good evening']
+
+    # Convert the input text to lowercase for case-insensitive comparison
+    text_lower = text.lower()
+
+    # Check if any greeting word is in the text
+    return any(greeting in text_lower for greeting in greetings)
+
+
 def AzureCosmosQA(human, session_id):
     try:
         start_time = time.time()
         with langchain_community.callbacks.get_openai_callback() as cb:
-            result = handle_greet(human)
-            if "don't have" not in result:
-                return result, cb.total_tokens, cb.total_cost, ''
+            if contains_greeting(human):
+                result = handle_greet(human)
+                if "don't have" not in result:
+                    return result, cb.total_tokens, cb.total_cost, ''
             response = QA_chain.invoke(
                 {"input": human},
                 config={
