@@ -114,11 +114,11 @@ class BEES_Main:
                             if "InternalPages" in filepath or "News" in filepath:
                                 self.updateData(Data=Data)
                                 continue
-                            print(filepath)
                             # filepath, file_exist = Download_AzureBlobFiles.Download_File(Data["FilePath"])
                             if file_exist:
                                 Pdf_content = Extract_PDF.process_documents(filepath, Data["Category"], Data["id"],
-                                                                            Data["policycode"], Data["policyname"])
+                                                                            Data["policycode"], Data["policyname"],
+                                                                            Data["ChangedOn"])
                                 if Pdf_content[0].page_content == '':
                                     error_details = f'Data is empty - {Data["id"]}'
                                     self.updateException(Data, error_details, 'B')
@@ -129,7 +129,7 @@ class BEES_Main:
                                     if Data["Category"] == "Policy":
                                         data = []
                                         metadata = {'source': filepath, 'category': Data["Category"],
-                                                    'unique_id': Data["id"]}
+                                                    'unique_id': Data["id"], 'Date': Data["ChangedOn"]}
                                         data.append(
                                             Document(page_content=Data["policycode"] + "-" + Data["policyname"],
                                                      metadata=metadata))
@@ -143,7 +143,7 @@ class BEES_Main:
                         # Process PageDetails
                         elif Data["Type"] == "page":
                             Page_Content = PageDoc(Data["PageContent"], Data["PageTitle"], Data["id"], Data["Category"],
-                                                   Data["FilePath"])
+                                                   Data["FilePath"], Data["ChangedOn"])
                             if Page_Content[0].page_content == '':
                                 error_details = f'Data is empty - {Data["id"]}'
                                 self.updateException(Data, error_details, 'B')
@@ -154,7 +154,8 @@ class BEES_Main:
 
                         # Process News
                         elif Data["Type"] == "News":
-                            News_Content = NewsDoc(Data["NewsContent"], Data["NewsTitle"], Data["id"], Data["Category"])
+                            News_Content = NewsDoc(Data["NewsContent"], Data["NewsTitle"], Data["id"], Data["Category"],
+                                                   Data["ChangedOn"])
                             if News_Content[0].page_content == '':
                                 error_details = f'Data is empty - {Data["id"]}'
                                 self.updateException(Data, error_details, 'B')
