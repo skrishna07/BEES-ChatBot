@@ -55,14 +55,14 @@ def pdf_page_to_text(pdf_document, pdf_reader, page_num):
         raise Exception(error_details)
 
 
-def process_pdf(file_path, category, id, policycode, policyname):
+def process_pdf(file_path, category, id, policycode, policyname, date):
     try:
         data = []
         text = analyze_read(file_path)
         text = text + "\n" + "  " + policycode + "  " + policyname
         text = text.replace('\\n', '')
         text = text.replace('@', '')
-        metadata = {'source': file_path, 'category': category, 'unique_id': id}
+        metadata = {'source': file_path, 'category': category, 'unique_id': id, 'Date': date}
         data.append(Document(page_content=text, metadata=metadata))
         return data
     except Exception as e:
@@ -70,14 +70,14 @@ def process_pdf(file_path, category, id, policycode, policyname):
         raise Exception(error_details)
 
 
-def process_image(file_path, category, id, policycode, policyname):
+def process_image(file_path, category, id, policycode, policyname, date):
     try:
         data = []
         text = analyze_read(file_path)
         text = text + "\n" + "  " + policycode + "  " + policyname
         text = text.replace('\\n', '')
         text = text.replace('@', '')
-        metadata = {'source': file_path, 'category': category, 'unique_id': id}
+        metadata = {'source': file_path, 'category': category, 'unique_id': id, 'Date': date}
         data.append(Document(page_content=text, metadata=metadata))
         return data
     except Exception as e:
@@ -85,13 +85,13 @@ def process_image(file_path, category, id, policycode, policyname):
         raise Exception(error_details)
 
 
-def process_documents(input_path, category, id, policycode, policyname):
+def process_documents(input_path, category, id, policycode, policyname, date):
     try:
         data = []
         if input_path.lower().endswith(".pdf"):
-            data.extend(process_pdf(input_path, category, id, policycode, policyname))
+            data.extend(process_pdf(input_path, category, id, policycode, policyname, date))
         elif input_path.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.gif')):
-            data.extend(process_image(input_path, category, id, policycode, policyname))
+            data.extend(process_image(input_path, category, id, policycode, policyname, date))
         return data
     except Exception as e:
         error_details = logger.log(f"Error occurred while processing attachment doc ocr: {e}", "Error")

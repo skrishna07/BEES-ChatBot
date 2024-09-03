@@ -13,7 +13,7 @@ class Document:
         return f"Document(page_content='{self.page_content}', metadata={self.metadata})"
 
 
-def NewsDoc(html_content, NewsTitle, unique_id, category):
+def NewsDoc(html_content, NewsTitle, unique_id, category, date):
     try:
         data = []
         # Parse the HTML content
@@ -23,7 +23,7 @@ def NewsDoc(html_content, NewsTitle, unique_id, category):
         file_path = f"News?newsId={unique_id[5:]}"
         text_content = text_content.replace('\\n', '')
         text_content = text_content.replace('@', '')
-        metadata = {'source': file_path, 'category': category, 'unique_id': unique_id, 'NewsTitle': NewsTitle}
+        metadata = {'source': file_path, 'category': category, 'unique_id': unique_id, 'NewsTitle': NewsTitle, 'Date': date}
         data.append(Document(page_content=text_content, metadata=metadata))
         return data
     except Exception as e:
@@ -31,7 +31,7 @@ def NewsDoc(html_content, NewsTitle, unique_id, category):
         raise Exception(error_details)
 
 
-def PageDoc(text_content, PageTitle, unique_id, category, URL):
+def PageDoc(text_content, PageTitle, unique_id, category, URL, date):
     try:
         data = []
         # Parse the HTML content
@@ -41,7 +41,7 @@ def PageDoc(text_content, PageTitle, unique_id, category, URL):
         text_content = soup.get_text()
         text_content = text_content.replace('\\n', '')
         text_content = text_content.replace('@', '')
-        metadata = {'source': URL, 'category': category, 'unique_id': unique_id, 'PageTitle': PageTitle}
+        metadata = {'source': URL, 'category': category, 'unique_id': unique_id, 'PageTitle': PageTitle, 'Date': date}
         data.append(Document(page_content=text_content, metadata=metadata))
         return data
     except Exception as e:
