@@ -285,7 +285,7 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
             print("user_query",user_query)
             query = (
                 "SELECT TOP {} c.id, c.text,c.source,c.category,VectorDistance(c.{}, {}) AS "
-                "SimilarityScore FROM c WHERE c.source like '%Holiday Calendar%' ORDER BY VectorDistance(c.{}, {})".format(
+                "SimilarityScore FROM c WHERE c.source like '%Holiday Calendar%' ORDER BY VectorDistance(c.{}, {}), c.Date DESC".format(
                     k,
                     self._embedding_key,
                     embeddings,
