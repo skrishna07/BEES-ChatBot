@@ -101,6 +101,8 @@ class BEES_Main:
             Load_Attachment_Data.Load_Data(self.BEES_Database, self.ChatMainContainer)
             Load_Page_Data.Load_Data(self.BEES_Database, self.ChatMainContainer)
             Load_News_Data.Load_Data(self.BEES_Database, self.ChatMainContainer)
+            Load_LinkPage_Data.Load_Data(self.BEES_Database, self.ChatMainContainer)
+            Load_QuickLink_Data.Load_Data(self.BEES_Database, self.ChatMainContainer)
             while True:
                 # Fetch new process record
                 Data = self.GetProcessData()
