@@ -109,11 +109,16 @@ prompt_search_query = ChatPromptTemplate.from_messages([
     ("user", "{input}"),
     ("system",
      """
-     Given the conversation history so far, consider previous questions and answers to 
-     generate a search query that retrieves information most relevant to the overall topic or question.
-     Considering the conversation so far, suggest a search query that could be helpful for the user.
-     If the same question has been asked previously, return the exact same query without reformatting.
-     """)
+Given the conversation history and the user's current question:
+Determine the Relevance of the Current Question:
+If the current question is related to previous questions or topics, slightly rephrase it while keeping its original meaning to fit the context. Generate a search query that incorporates this adjusted question and relevant parts of the conversation history.
+If the current question is unrelated to any prior conversation, ignore the previous chat history and generate a search query solely based on the rephrased version of the current question. The rephrasing should be minimal and retain the question's original intent to optimize it for querying into a vector store.
+Generate and Provide the Search Query:
+Always output a search query that is appropriate for finding relevant information, even if the exact answer is not known.
+If the same question has been asked before, return the previously generated query without any changes.
+Output Format:
+Ensure the output is a single, clear search query text based on the steps above.
+""")
 ])
 
 history_aware_retriever = langchain.chains.history_aware_retriever.create_history_aware_retriever(
@@ -155,6 +160,7 @@ You are a highly knowledgeable and concise assistant specializing in Beep chatbo
 20. Provide relevant answers for synonyms found in the context.
 21. If the question relates to any upcoming, next, or previous holidays, including specific months, weeks, dates, days, or long weekends, refer only to the list of holidays provided in the context. Use the current calendar date to accurately determine and provide information based on the context.
 has context menu
+22. When asked for updates, news, or information on specific topics, search the context provided for any direct mentions of these topics or related details. Provide a precise answer using the exact information found in the context, and do not consider the current date or any previous conversation history. Always treat each question independently, ensuring that the response is based solely on the provided context. If the context contains relevant information about the topic, summarize that directly. 
 **Stay on topic:** Answer the question based solely on the information in the context. Do not use any outside knowledge.
 
 Context: {context}
@@ -223,6 +229,7 @@ def contains_greeting(text):
 def AzureCosmosQA(human, session_id):
     try:
         start_time = time.time()
+        human = human.lower()
         with langchain_community.callbacks.get_openai_callback() as cb:
             if contains_greeting(human):
                 result = handle_greet(human)

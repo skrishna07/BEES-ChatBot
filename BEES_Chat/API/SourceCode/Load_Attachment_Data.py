@@ -21,7 +21,7 @@ def get_policy_details(SQLDatabase, head_id):
     try:
         rows = SQLDatabase.select_data('Policy', (
             "PolicyCode,PolicyName"), "id="+str(head_id))
-        logger.log("Attachment policy data successfully fetched", "Info")
+        # logger.log("Attachment policy data successfully fetched", "Info")
         if rows:
             return rows[0]
         else:
@@ -133,7 +133,7 @@ def process_attachments(SQLDatabase, container):
                         "Category": Category,
                         "ExceptionDetails": "",
                         "policycode": policycode,
-                        "policyname": policyname
+                        "policyname": policyname,
                     }
                     container.create_item(body=serialize_item(new_item))
                 else:
