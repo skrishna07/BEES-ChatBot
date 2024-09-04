@@ -5,8 +5,10 @@ from SourceCode import Extract_PDF
 from SourceCode import Load_Attachment_Data
 from SourceCode import Load_Page_Data
 from SourceCode import Load_News_Data
+from SourceCode import Load_LinkPage_Data
+from SourceCode import Load_QuickLink_Data
 from SourceCode import AzureCosmosVectorStoreContianer
-from SourceCode.Convert_text_to_doc import NewsDoc, PageDoc
+from SourceCode.Convert_text_to_doc import NewsDoc, PageDoc, LinksDoc
 from SourceCode.BEES_DB import SQLDatabase
 from SourceCode.AzureCosmosNoSqlDatabase import CosmosDBManager
 from dotenv import load_dotenv, find_dotenv
@@ -163,6 +165,19 @@ class BEES_Main:
                                 continue
                             else:
                                 AzureCosmosVectorStoreContianer.Load_ChunkData(News_Content)
+
+                        # Process Links
+                        elif Data["Type"] == "LinkPage" or Data["Type"] == "QuickLink":
+                            Link_Content = LinksDoc(Data["NewsContent"], Data["id"],
+                                                    Data["Category"], Data["FilePath"],
+                                                    Data["ChangedOn"])
+                            if Link_Content[0].page_content == '':
+                                error_details = f'Data is empty - {Data["id"]}'
+                                self.updateException(Data, error_details, 'B')
+                                self.Logger.log(error_details, "Info")
+                                continue
+                            else:
+                                AzureCosmosVectorStoreContianer.Load_ChunkData(Link_Content)
 
                         # Update Process Completion
                         self.updateData(Data=Data)

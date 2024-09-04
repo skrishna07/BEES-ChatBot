@@ -23,7 +23,8 @@ def NewsDoc(html_content, NewsTitle, unique_id, category, date):
         file_path = f"News?newsId={unique_id[5:]}"
         text_content = text_content.replace('\\n', '')
         text_content = text_content.replace('@', '')
-        metadata = {'source': file_path, 'category': category, 'unique_id': unique_id, 'NewsTitle': NewsTitle, 'Date': date}
+        metadata = {'source': file_path, 'category': category, 'unique_id': unique_id, 'NewsTitle': NewsTitle,
+                    'Date': date}
         data.append(Document(page_content=text_content, metadata=metadata))
         return data
     except Exception as e:
@@ -48,3 +49,13 @@ def PageDoc(text_content, PageTitle, unique_id, category, URL, date):
         error_details = logger.log(f"Error creating document for page content: {str(e)}", "Error")
         raise Exception(error_details)
 
+
+def LinksDoc(text_content, unique_id, category, URL, date):
+    try:
+        data = []
+        metadata = {'source': URL, 'category': category, 'unique_id': unique_id, 'Date': date}
+        data.append(Document(page_content=text_content, metadata=metadata))
+        return data
+    except Exception as e:
+        error_details = logger.log(f"Error creating document for link content: {str(e)}", "Error")
+        raise Exception(error_details)
