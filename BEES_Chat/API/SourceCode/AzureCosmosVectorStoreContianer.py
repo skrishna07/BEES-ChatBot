@@ -59,7 +59,7 @@ openai_embeddings = AzureOpenAIEmbeddings(
 
 def Load_ChunkData(Data):
     try:
-        text_splitter = langchain_text_splitters.RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=350)
+        text_splitter = langchain_text_splitters.RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
         docs = text_splitter.split_documents(Data)
 
         AzureCosmosDBNoSqlVectorSearch.from_documents(
@@ -89,4 +89,21 @@ def delete_chunk_item(unique_id):
             logger.log(f"Successfully deleted Chunk Data: {unique_id}", "Info")
     except:
         logger.log(f"No data found for deletion: {unique_id}", "Error")
+
+
+def delete_all_chunk_item(unique_id):
+    query = f"SELECT c.id FROM c WHERE c.Category = 'QuickLink'"
+    try:
+        query_items = container.query_items(query, enable_cross_partition_query=True)
+        # items = list(query_items)
+        if query_items:
+            for item in query_items:
+                container.delete_item(item=item['id'], partition_key=item['id'])
+                logger.log(f"Successfully deleted Chunk Data:"+item['id'], "Info")
+    except:
+        logger.log(f"No data found for deletion: {unique_id}", "Error")
+        
+#delete_all_chunk_item('')
+
+
 

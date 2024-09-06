@@ -18,14 +18,24 @@ def serialize_item(item):
 
 
 def get_QuickLink_content_data(SQLDatabase):
+    
     try:
         if os.getenv('InsertAllData') == 'Y':
-            rows = SQLDatabase.select_data('QuickLinkData', (
-                "QuickLinkName, LinkURL, IsActive, ChangedOn, Id"), "LinkURL not in ('#','NULL','')")
+            rows = SQLDatabase.select_data_with_join("""SELECT QuickLinkName, LinkURL, IsActive, ChangedOn, Id
+                    FROM (
+                      SELECT *,
+                        ROW_NUMBER() OVER (PARTITION BY QuickLinkName ORDER BY id) AS row_num
+                      FROM QuickLinkData WHERE LinkURL not in ('#','NULL','')
+                    ) AS subquery
+                    WHERE row_num = 1""")
         else:
-            rows = SQLDatabase.select_data('QuickLinkData', (
-                "QuickLinkName, LinkURL, IsActive, ChangedOn, Id"),
-                                           "ChangedOn >= DATEADD(day, -7, GETDATE()) AND ChangedOn <= GETDATE() AND LinkURL not in ('#','NULL','')")
+            rows = SQLDatabase.select_data_with_join("""SELECT QuickLinkName, LinkURL, IsActive, ChangedOn, Id
+                    FROM (
+                      SELECT *,
+                        ROW_NUMBER() OVER (PARTITION BY QuickLinkName ORDER BY id) AS row_num
+                      FROM QuickLinkData WHERE ChangedOn >= DATEADD(day, -7, GETDATE()) AND ChangedOn <= GETDATE() AND LinkURL not in ('#','NULL','')
+                    ) AS subquery
+                    WHERE row_num = 1""")
         logger.log("QuickLink_content data successfully fetched", "Info")
         return rows
     except Exception as e:
@@ -47,7 +57,10 @@ def process_QuickLink(SQLDatabase, container):
                     items = list(query_items)
                 except:
                     items = []
+                    print("empty item")
+
                 if not items:
+                    print("new item")
                     if link['ChangedOn']:
                         ChangedOn = str(link['ChangedOn'].replace(microsecond=0))
                     else:

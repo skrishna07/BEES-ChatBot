@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from .Log import Logger
 import itertools
 import uuid
 import warnings
@@ -15,6 +15,19 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStore
 
 from langchain_community.vectorstores.utils import maximal_marginal_relevance
+from datetime import datetime, timezone
+
+Logger = Logger()
+
+
+# Get the current year
+current_year = datetime.now().year
+
+# Create a datetime object for January 1st of the current year at midnight in UTC
+january_first = datetime(current_year, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+
+# Format the datetime object in ISO 8601 format
+iso_format = january_first.isoformat()
 
 # import nltk
 #
@@ -281,39 +294,62 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
             embeddings: List[float],
             k: int = 4,
     ) -> List[Tuple[Document, float]]:
-        if "holiday" in user_query.lower():
-            print("user_query",user_query)
+        print("user_query",user_query)
+        user_query_list = user_query.split()
+        if len(user_query_list) == 1:
+            print("single user_query")
             query = (
-                "SELECT TOP {} c.id, c.text,c.source,c.category,VectorDistance(c.{}, {}) AS "
-                "SimilarityScore FROM c WHERE c.source like '%Holiday Calendar%' ORDER BY VectorDistance(c.{}, {}), c.Date DESC".format(
-                    k,
-                    self._embedding_key,
-                    embeddings,
-                    self._embedding_key,
-                    embeddings,
+                    "SELECT TOP {} c.id, c.text,c.source,c.category,c.Date,VectorDistance(c.{}, {}) AS "
+                    "SimilarityScore FROM c WHERE lower(c.text) like '%{}%' ORDER BY VectorDistance(c.{}, {}) ".format(
+                        k,
+                        self._embedding_key,
+                        embeddings,
+                        user_query,
+                        self._embedding_key,
+                        embeddings,
+                    )
                 )
-            )
+            #Logger.log(f"query-"+query, "Info")
+
         else:
-            query = (
-                "SELECT TOP {} c.id, c.text,c.source,c.category,VectorDistance(c.{}, {}) AS "
-                "SimilarityScore FROM c ORDER BY VectorDistance(c.{}, {})".format(
-                    k,
-                    self._embedding_key,
-                    embeddings,
-                    self._embedding_key,
-                    embeddings,
+            if "holiday" in user_query.lower():
+                query = (
+                    "SELECT TOP {} c.id, c.text,c.source,c.category,c.Date,VectorDistance(c.{}, {}) AS "
+                    "SimilarityScore FROM c WHERE c.source like '%Holiday Calendar%' ORDER BY VectorDistance(c.{}, {})".format(
+                        k,
+                        self._embedding_key,
+                        embeddings,
+                        self._embedding_key,
+                        embeddings,
+                    )
                 )
-            )
-
-
+            else:
+                query = (
+                    "SELECT TOP {} c.id, c.text,c.source,c.category,c.Date,VectorDistance(c.{}, {}) AS "
+                    "SimilarityScore FROM c ORDER BY VectorDistance(c.{}, {}) ".format(
+                        k,
+                        self._embedding_key,
+                        embeddings,
+                        self._embedding_key,
+                        embeddings,
+                    )
+                )
         docs_and_scores = []
         items1 = list(
             self._container.query_items(query=query, enable_cross_partition_query=True)
         )
         source = ''
-        for item in items1:
-            source = item["source"]
-        print(source)
+        if items1:
+            source = items1[0]["source"]
+            category = items1[0]["category"]
+            if category == "News" or category == "Banner":
+                latest_date = None
+                for item in items1:
+                    date = item["Date"]
+                    date_obj = datetime.strptime(str(date), "%Y-%m-%d %H:%M:%S")
+                    if latest_date is None or date_obj > latest_date:
+                        latest_date = date_obj
+                        source = item["source"]
         if "C:" in source:
             source = source.replace("\\", "\\\\")
         if "D:" in source:
@@ -333,13 +369,14 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
         )
         for item in items2:
             text = item["text"]
-            # print("\n\n")
-            # print(text)
+            print("\n\n")
+            print(item["source"])
+            print(text)
             text = str(text).replace("\n", "")
             if text == '©':
                 continue
             score = item["SimilarityScore"]
-            # print("Score- ", score)
+            #print("Score- ", score)
             meta = {"source": item["source"], "category": item["category"]}
             docs_and_scores.append(
                 (Document(page_content=f"{text}", metadata=meta), score))
