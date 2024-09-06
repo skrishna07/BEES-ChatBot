@@ -4,6 +4,9 @@ venv
 db.sqlite3
 .Log
 .Files
+BEES_Chat/**/*.txt
+BEES_Chat/**/*.pyc
+BEES_Chat/**/**/**/*.pyc
 __pycache__/
 .BEES_Chat\API\__pycache__
 BEES_Chat/API/__pycache__/__init__.cpython-311.pyc

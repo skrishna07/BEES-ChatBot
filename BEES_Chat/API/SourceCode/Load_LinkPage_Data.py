@@ -20,12 +20,21 @@ def serialize_item(item):
 def get_LinkPage_content_data(SQLDatabase):
     try:
         if os.getenv('InsertAllData') == 'Y':
-            rows = SQLDatabase.select_data('LinkPageData', (
-                "Name, LinkURL, IsActive, ChangedOn, Id"), "LinkURL not in ('#','NULL','')")
+            rows = SQLDatabase.select_data_with_join("""SELECT Name,IsActive,LinkURL,ChangedOn,Id
+                    FROM (
+                      SELECT *,
+                        ROW_NUMBER() OVER (PARTITION BY Name ORDER BY id) AS row_num
+                      FROM LinkPageData WHERE LinkURL not in ('#','NULL','')
+                    ) AS subquery
+                    WHERE row_num = 1""")
         else:
-            rows = SQLDatabase.select_data('LinkPageData', (
-                "Name, LinkURL, IsActive, ChangedOn, Id"),
-                                           "ChangedOn >= DATEADD(day, -7, GETDATE()) AND ChangedOn <= GETDATE() AND LinkURL not in ('#','NULL','')")
+            rows = SQLDatabase.select_data_with_join("""SELECT Name,IsActive,LinkURL,ChangedOn,Id
+                    FROM (
+                      SELECT *,
+                        ROW_NUMBER() OVER (PARTITION BY Name ORDER BY id) AS row_num
+                      FROM LinkPageData WHERE ChangedOn >= DATEADD(day, -7, GETDATE()) AND ChangedOn <= GETDATE() AND LinkURL not in ('#','NULL','')
+                    ) AS subquery
+                    WHERE row_num = 1""")
         logger.log("LinkPage_content data successfully fetched", "Info")
         return rows
     except Exception as e:

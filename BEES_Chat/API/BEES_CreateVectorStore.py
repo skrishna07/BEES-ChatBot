@@ -51,7 +51,7 @@ class BEES_Main:
         self.Cosmos_Client.create_database_if_not_exists(item=os.getenv('WebChat_DB'))
 
         self.ChatMainContainer = self.Cosmos_Client.create_container(database_id=os.getenv('WebChat_DB'),
-                                                                     container_id='BEES_ChatMain',
+                                                                     container_id=os.getenv('WebChat_Container'),
                                                                      partition_key_path="/ID")
 
     def GetProcessData(self):
@@ -98,9 +98,9 @@ class BEES_Main:
     def run(self):
         try:
             self.Logger.log(f"Vectorstore data sync process started", "Info")
-            Load_Attachment_Data.Load_Data(self.BEES_Database, self.ChatMainContainer)
-            Load_Page_Data.Load_Data(self.BEES_Database, self.ChatMainContainer)
-            Load_News_Data.Load_Data(self.BEES_Database, self.ChatMainContainer)
+            #Load_Attachment_Data.Load_Data(self.BEES_Database, self.ChatMainContainer)
+            #Load_Page_Data.Load_Data(self.BEES_Database, self.ChatMainContainer)
+            #Load_News_Data.Load_Data(self.BEES_Database, self.ChatMainContainer)
             Load_LinkPage_Data.Load_Data(self.BEES_Database, self.ChatMainContainer)
             Load_QuickLink_Data.Load_Data(self.BEES_Database, self.ChatMainContainer)
             while True:

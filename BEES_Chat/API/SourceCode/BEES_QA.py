@@ -94,7 +94,7 @@ vectorstore = AzureCosmosDBNoSqlVectorSearch(embedding=openai_embeddings,
 
 qa_retriever = vectorstore.as_retriever(
     search_type="similarity",
-    search_kwargs={"k": 1},
+    search_kwargs={"k": 7},
     return_source_documents=True,
 )
 
@@ -160,7 +160,10 @@ You are a highly knowledgeable and concise assistant specializing in Beep chatbo
 20. Provide relevant answers for synonyms found in the context.
 21. If the question relates to any upcoming, next, or previous holidays, including specific months, weeks, dates, days, or long weekends, refer only to the list of holidays provided in the context. Use the current calendar date to accurately determine and provide information based on the context.
 has context menu
-22. When asked for updates, news, or information on specific topics, search the context provided for any direct mentions of these topics or related details. Provide a precise answer using the exact information found in the context, and do not consider the current date or any previous conversation history. Always treat each question independently, ensuring that the response is based solely on the provided context. If the context contains relevant information about the topic, summarize that directly. 
+22. When asked for updates, news, or information on specific topics, search the context provided for any direct mentions of these topics or related details. Provide a precise answer using the exact information found in the context, and do not consider the current date or any previous conversation history. Always treat each question independently, ensuring that the response is based solely on the provided context. If the context contains relevant information about the topic, summarize that directly.
+23. Single-word Questions:
+If the question contains only a single word, identify the word in the context and provide related information or a category it belongs to. For example, if "Pune" is mentioned in a list or category (like cities or regions), provide the information or context that categorizes it. If no related context is available, state "Sorry, I don't have information."
+24. For every answer generated, mention "Please check the source link for more details." This ensures users are directed to the original source for comprehensive information.
 **Stay on topic:** Answer the question based solely on the information in the context. Do not use any outside knowledge.
 
 Context: {context}
@@ -254,11 +257,12 @@ def AzureCosmosQA(human, session_id):
                 source_link = ''
                 # response = "Sorry, I don't have information. Could you please provide more precise question"
             if "<table>" not in response:
-                if similarity < 0.035:
-                    print("score mismatched", similarity)
-                    source_link = ''
-                    response = "Sorry, I don't have information. Could you please provide more precise question"
-            source_link = re.sub(r'.*Files', '', source_link)
+                pass
+                # if similarity < 0.030:
+                #   print("score mismatched", similarity)
+                 #   source_link = ''
+                   # response = "Sorry, I don't have information. Could you please provide more precise question"
+            #source_link = re.sub(r'.*Files', '', source_link)
             source_link = source_link.replace("D:\\Webapplication\\BEEP\\", "")
             response, source_link = post_process_answer(str(context), response, source_link)
             print(f"Total Tokens: {cb.total_tokens}")
