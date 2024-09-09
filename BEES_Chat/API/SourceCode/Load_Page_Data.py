@@ -45,10 +45,10 @@ def get_Page_data(SQLDatabase):
     try:
         if os.getenv('InsertAllData') == 'Y':
             rows = SQLDatabase.select_data('InternalPage', (
-                "PageTitle, PageContent, IsActive, ChangedOn, MenuCategoryId, MenuSubCategoryId, MenuSubChildId, Id, MenuPath"))
+                "PageTitle, PageContent, IsActive, ChangedOn, MenuCategoryId, MenuSubCategoryId, MenuSubChildId, Id, MenuPath, LinkUrl"))
         else:
             rows = SQLDatabase.select_data('InternalPage', (
-                "PageTitle, PageContent, IsActive, ChangedOn, MenuCategoryId, MenuSubCategoryId, MenuSubChildId, Id, MenuPath"),
+                "PageTitle, PageContent, IsActive, ChangedOn, MenuCategoryId, MenuSubCategoryId, MenuSubChildId, Id, MenuPath, LinkUrl"),
                                            "ChangedOn >= DATEADD(day, -7, GETDATE()) AND ChangedOn <= GETDATE()")
         logger.log("Page data successfully fetched", "Info")
         return rows
@@ -96,11 +96,11 @@ def process_pages(SQLDatabase, container):
                         "ISActive": IsActive,
                         "Type": "page",
                         "ChangedOn": ChangedOn,
-                        "FilePath": str(page["MenuPath"]),
+                        "FilePath": str(page["LinkUrl"]),
                         "LinkURL": "",
                         "PageContent": page['PageContent'],
                         "PageTitle": page['PageTitle'],
-                        "URL": str(page["MenuPath"]),
+                        "URL": str(page["LinkUrl"]),
                         "NewsContent": "",
                         "NewsTitle": "",
                         "CreatedBy": str(user_name) + "_" + str(machine_name),
