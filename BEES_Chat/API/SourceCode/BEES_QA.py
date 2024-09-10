@@ -101,7 +101,7 @@ qa_retriever = vectorstore.as_retriever(
 llm = AzureChatOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
     azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
-    openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"), temperature=0.5, max_tokens=500
+    openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"), temperature=1, max_tokens=500
 )
 
 prompt_search_query = ChatPromptTemplate.from_messages([
@@ -158,9 +158,20 @@ You are a highly knowledgeable and concise assistant specializing in Beep chatbo
 18. If the question is related to a route number or bus number, fetch the route number in context and provide the answer.
 19. Remove the phrase "context states" from the answer.
 20. Provide relevant answers for synonyms found in the context.
-21. If the question relates to any upcoming, next, or previous holidays, including specific months, weeks, dates, days, or long weekends, refer only to the list of holidays provided in the context. Use the current calendar date to accurately determine and provide information based on the context.
-has context menu
-22. When asked for updates, news, or information on specific topics, search the context provided for any direct mentions of these topics or related details. Provide a precise answer using the exact information found in the context, and do not consider the current date or any previous conversation history. Always treat each question independently, ensuring that the response is based solely on the provided context. If the context contains relevant information about the topic, summarize that directly.
+21. When answering questions about holidays—whether upcoming, next, previous, or specific to a month, week, date, day, or long weekend—  adhere strictly to the following rules:
+ 
+Context-Restricted Responses: Only provide answers based on the holidays listed in the provided holiday calendar. Do not include any holidays or information not present in the context.
+ 
+Specific Timeframe Questions: If a user asks about holidays within a specific timeframe (such as a particular month, week, or date range), only mention the holidays that fall within that specified timeframe.
+ 
+No Generic Information: Avoid providing general information about holidays not listed in the provided holiday calendar. Focus solely on the holidays mentioned in the context.
+ 
+Optional Holidays Information: If the user asks about optional holidays, specify that employees can choose any two from the provided optional holidays list, subject to managerial approval.
+ 
+Regional Specificity: Be specific about which holidays are applicable to which locations (e.g., Telangana, Uttarakhand, Himachal Pradesh) as per the provided data. If a user asks about holidays for a specific region, ensure that only holidays relevant to that region are mentioned.
+ 
+Format of Answer: When listing holidays, provide the holiday name, date, day of the week, and the regions where the holiday is applicable.
+22. For news-related questions (e.g., updates, latest news,awards or specific details about a topic), search the context for relevant mentions and provide a concise summary of the  pertinent information. If the question is vague or general, offer a brief overview of the main news points. Always use only the information provided in the context, and if no relevant information is found, state "Sorry, I don't have information."
 23. Single-word Questions:
 If the question contains only a single word, identify the word in the context and provide related information or a category it belongs to. For example, if "Pune" is mentioned in a list or category (like cities or regions), provide the information or context that categorizes it. If no related context is available, state "Sorry, I don't have information."
 24. For every answer generated, mention "Please check the source link for more details." This ensures users are directed to the original source for comprehensive information.
@@ -233,6 +244,12 @@ def AzureCosmosQA(human, session_id):
     try:
         start_time = time.time()
         human = human.lower()
+        human = human.replace("news","information")
+        human = human.replace("latest","")
+        # Define the pattern to match 'be' as a whole word
+        pattern = r'\bbe\b'
+        # Replace 'be' with 'biologicale'
+        human = re.sub(pattern, 'biologicale', human)
         with langchain_community.callbacks.get_openai_callback() as cb:
             if contains_greeting(human):
                 result = handle_greet(human)

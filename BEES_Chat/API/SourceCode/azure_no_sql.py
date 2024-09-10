@@ -312,10 +312,11 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
             #Logger.log(f"query-"+query, "Info")
 
         else:
-            if "holiday" in user_query.lower():
+            if "holiday" in user_query:
+                print("holiday_query")
                 query = (
                     "SELECT TOP {} c.id, c.text,c.source,c.category,c.Date,VectorDistance(c.{}, {}) AS "
-                    "SimilarityScore FROM c WHERE c.source like '%Holiday Calendar%' ORDER BY VectorDistance(c.{}, {})".format(
+                    "SimilarityScore FROM c WHERE c.source like '%Holiday_Calendar%' and c.category='PageMenu' ORDER BY VectorDistance(c.{}, {})".format(
                         k,
                         self._embedding_key,
                         embeddings,
@@ -341,6 +342,7 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
         source = ''
         if items1:
             source = items1[0]["source"]
+            print(source)
             category = items1[0]["category"]
             if category == "News" or category == "Banner":
                 latest_date = None
@@ -354,16 +356,29 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
             source = source.replace("\\", "\\\\")
         if "D:" in source:
             source = source.replace("\\", "\\\\")
-        query2 = (
-            "SELECT TOP 3 c.id, c.text,c.source,c.category,VectorDistance(c.{}, {}) AS "
-            "SimilarityScore FROM c WHERE c.source = '{}' ORDER BY VectorDistance(c.{}, {})".format(
-                self._embedding_key,
-                embeddings,
-                source,
-                self._embedding_key,
-                embeddings,
+        if "holiday" in user_query:
+            query2 = (
+                "SELECT TOP 3 c.id, c.text,c.source,c.category,VectorDistance(c.{}, {}) AS "
+                "SimilarityScore FROM c WHERE c.source = '{}' and c.category='PageMenu' ORDER BY VectorDistance(c.{}, {})".format(
+                    self._embedding_key,
+                    embeddings,
+                    source,
+                    self._embedding_key,
+                    embeddings,
+                )
             )
-        )
+        else:
+            query2 = (
+                "SELECT TOP 3 c.id, c.text,c.source,c.category,VectorDistance(c.{}, {}) AS "
+                "SimilarityScore FROM c WHERE c.source = '{}' ORDER BY VectorDistance(c.{}, {})".format(
+                    self._embedding_key,
+                    embeddings,
+                    source,
+                    self._embedding_key,
+                    embeddings,
+                )
+            )
+            
         items2 = list(
             self._container.query_items(query=query2, enable_cross_partition_query=True)
         )
@@ -376,7 +391,7 @@ class AzureCosmosDBNoSqlVectorSearch(VectorStore):
             if text == '©':
                 continue
             score = item["SimilarityScore"]
-            #print("Score- ", score)
+            print("Score- ", score)
             meta = {"source": item["source"], "category": item["category"]}
             docs_and_scores.append(
                 (Document(page_content=f"{text}", metadata=meta), score))
