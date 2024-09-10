@@ -13,17 +13,17 @@ class Document:
         return f"Document(page_content='{self.page_content}', metadata={self.metadata})"
 
 
-def NewsDoc(html_content, NewsTitle, unique_id, category, date):
+def NewsDoc(html_content, NewsTitle, unique_id, category, date, URL):
     try:
         data = []
         # Parse the HTML content
         soup = BeautifulSoup(html_content, 'html.parser')
         # Extract and print the text content
         text_content = soup.get_text()
-        file_path = f"News?newsId={unique_id[5:]}"
+        # file_path = f"News?newsId={unique_id[5:]}"
         text_content = text_content.replace('\\n', '')
         text_content = text_content.replace('@', '')
-        metadata = {'source': file_path, 'category': category, 'unique_id': unique_id, 'NewsTitle': NewsTitle,
+        metadata = {'source': URL, 'category': category, 'unique_id': unique_id, 'NewsTitle': NewsTitle,
                     'Date': date}
         data.append(Document(page_content=text_content, metadata=metadata))
         return data

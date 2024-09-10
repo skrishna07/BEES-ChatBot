@@ -159,7 +159,7 @@ class BEES_Main:
                         # Process News
                         elif Data["Type"] == "News":
                             News_Content = NewsDoc(Data["NewsContent"], Data["NewsTitle"], Data["id"], Data["Category"],
-                                                   Data["ChangedOn"])
+                                                   Data["ChangedOn"], Data["FilePath"])
                             if News_Content[0].page_content == '':
                                 error_details = f'Data is empty - {Data["id"]}'
                                 self.updateException(Data, error_details, 'B')
