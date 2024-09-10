@@ -21,10 +21,10 @@ def get_News_content_data(SQLDatabase):
     try:
         if os.getenv('InsertAllData') == 'Y':
             rows = SQLDatabase.select_data('News', (
-                "NewsTitle, NewsContent, IsActive, ChangedOn, Id"))
+                "NewsTitle, NewsContent, IsActive, ChangedOn, Id, LinkUrl"))
         else:
             rows = SQLDatabase.select_data('News', (
-                "NewsTitle, NewsContent, IsActive, ChangedOn, Id"),
+                "NewsTitle, NewsContent, IsActive, ChangedOn, Id, LinkUrl"),
                                            "ChangedOn >= DATEADD(day, -7, GETDATE()) AND ChangedOn <= GETDATE()")
         logger.log("News_content data successfully fetched", "Info")
         return rows
@@ -66,11 +66,11 @@ def process_News(SQLDatabase, container):
                         "ISActive": IsActive,
                         "Type": "News",
                         "ChangedOn": ChangedOn,
-                        "FilePath": "",
+                        "FilePath": News_content['LinkUrl'],
                         "LinkURL": "",
                         "PageContent": "",
                         "PageTitle": "",
-                        "URL": "",
+                        "URL": News_content['LinkUrl'],
                         "NewsContent": News_content['NewsContent'],
                         "NewsTitle": News_content['NewsTitle'],
                         "CreatedBy": str(user_name) + "_" + str(machine_name),
