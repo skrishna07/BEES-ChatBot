@@ -85,7 +85,11 @@ def process_pages(SQLDatabase, container):
                         IsActive = "False"
                     if int(page['MenuCategoryId']) == 0:
                         # RunFlag = "N"
-                        Category = "PageMenu"
+                        PageTitle = page['PageTitle']
+                        if 'Bus' in PageTitle or 'Table' in PageTitle:
+                            Category = "BusPageMenu"
+                        else:
+                            Category = "PageMenu"
                     else:
                         Category = get_category_name(SQLDatabase, int(page['MenuCategoryId']),
                                                      int(page['MenuSubCategoryId']), int(page['MenuSubChildId']))
