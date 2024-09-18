@@ -8,7 +8,7 @@ from SourceCode import Load_News_Data
 from SourceCode import Load_LinkPage_Data
 from SourceCode import Load_QuickLink_Data
 from SourceCode import AzureCosmosVectorStoreContianer
-from SourceCode.Convert_text_to_doc import NewsDoc, PageDoc, LinksDoc
+from SourceCode.Convert_text_to_doc import NewsDoc, PageDoc, LinksDoc, BusRouteDoc, BusRouteGroup
 from SourceCode.BEES_DB import SQLDatabase
 from SourceCode.AzureCosmosNoSqlDatabase import CosmosDBManager
 from dotenv import load_dotenv, find_dotenv
@@ -146,15 +146,30 @@ class BEES_Main:
 
                         # Process PageDetails
                         elif Data["Type"] == "page":
-                            Page_Content = PageDoc(Data["PageContent"], Data["PageTitle"], Data["id"], Data["Category"],
-                                                   Data["FilePath"], Data["ChangedOn"])
-                            if Page_Content[0].page_content == '':
-                                error_details = f'Data is empty - {Data["id"]}'
-                                self.updateException(Data, error_details, 'B')
-                                self.Logger.log(error_details, "Info")
-                                continue
+                            if Data["Category"] == 'BusPageMenu':
+                                groupdf = BusRouteGroup(Data["PageContent"])
+                                for index, row in groupdf.iterrows():
+                                    Page_Content = BusRouteDoc(groupdf, row, Data["id"], Data["Category"],
+                                                               Data["ChangedOn"])
+                                    if Page_Content[0].page_content == '':
+                                        error_details = f'Data is empty - {Data["id"]}'
+                                        self.updateException(Data, error_details, 'B')
+                                        self.Logger.log(error_details, "Info")
+                                        continue
+                                    else:
+                                        AzureCosmosVectorStoreContianer.Load_ChunkData(Page_Content)
+
                             else:
-                                AzureCosmosVectorStoreContianer.Load_ChunkData(Page_Content)
+                                Page_Content = PageDoc(Data["PageContent"], Data["PageTitle"], Data["id"],
+                                                       Data["Category"],
+                                                       Data["FilePath"], Data["ChangedOn"])
+                                if Page_Content[0].page_content == '':
+                                    error_details = f'Data is empty - {Data["id"]}'
+                                    self.updateException(Data, error_details, 'B')
+                                    self.Logger.log(error_details, "Info")
+                                    continue
+                                else:
+                                    AzureCosmosVectorStoreContianer.Load_ChunkData(Page_Content)
 
                         # Process News
                         elif Data["Type"] == "News":
