@@ -2,6 +2,7 @@ import langchain_text_splitters
 from azure.cosmos import CosmosClient, PartitionKey
 from langchain_community.vectorstores.azure_cosmos_db_no_sql import (AzureCosmosDBNoSqlVectorSearch, )
 from langchain_openai import AzureOpenAIEmbeddings
+from langchain_experimental.text_splitter import SemanticChunker
 from dotenv import load_dotenv, find_dotenv
 from .Log import Logger
 import os
@@ -20,7 +21,6 @@ os.environ["AZURE_OPENAI_API_VERSION"] = os.getenv('Azure_OpenAIVersion')
 os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"] = os.getenv('Azure_OpenAIDeploymentName')
 os.environ["AZURE_EMBEDDINGS_DEPLOYMENT_NAME"] = os.getenv('Azure_EmbeddingDeploymentName')
 os.environ["AZURE_EMBEDDINGS_MODEL_NAME"] = os.getenv('Azure_EmbeddingModelName')
-
 
 indexing_policy = {
     "indexingMode": "consistent",
@@ -59,7 +59,7 @@ openai_embeddings = AzureOpenAIEmbeddings(
 
 def Load_ChunkData(Data):
     try:
-        text_splitter = langchain_text_splitters.RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
+        text_splitter = langchain_text_splitters.RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=150)
         docs = text_splitter.split_documents(Data)
 
         AzureCosmosDBNoSqlVectorSearch.from_documents(
@@ -92,18 +92,16 @@ def delete_chunk_item(unique_id):
 
 
 def delete_all_chunk_item(unique_id):
-    query = f"SELECT c.id FROM c WHERE c.Category = 'QuickLink'"
+    query = f"SELECT c.id FROM c WHERE c.metadata.source like '%BusRoute%'"
     try:
         query_items = container.query_items(query, enable_cross_partition_query=True)
         # items = list(query_items)
         if query_items:
             for item in query_items:
                 container.delete_item(item=item['id'], partition_key=item['id'])
-                logger.log(f"Successfully deleted Chunk Data:"+item['id'], "Info")
+                logger.log(f"Successfully deleted Chunk Data:" + item['id'], "Info")
     except:
         logger.log(f"No data found for deletion: {unique_id}", "Error")
-        
-#delete_all_chunk_item('')
 
 
-
+# delete_all_chunk_item('')

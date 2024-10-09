@@ -6,6 +6,7 @@ from rest_framework.authentication import SessionAuthentication, TokenAuthentica
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .SourceCode.BEES_QA import AzureCosmosQA
+from .SourceCode.BEES_QA_AI import AzureCosmos_AIQA
 from dotenv import load_dotenv, find_dotenv
 import os
 
@@ -75,6 +76,42 @@ def update_chat_history(container, response, session_id, ip_address):
             'datetime': str(datetime.datetime.now())
         }
         container.create_item(body=chat_history_item)
+
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def AISearchResponse(request):
+    try:
+        print("AI Search")
+        request_body = json.loads(request.body)
+        query = request_body.get('query')
+        session_id = request_body.get('session_id')
+        ip_address = request_body.get('ip_address')
+        if not session_id:
+            request.session.create()
+            session_id = request.session.session_key
+        if not query:
+            return Response({"error": "Query not provided"}, status=400)
+
+        response_data, token_used, total_cost, source = AzureCosmos_AIQA(query, session_id)
+        response_dict_history = {'query': query, 'response': response_data, 'source': source,
+                                 'status': 'success',
+                                 'token_used': token_used, 'total_cost': total_cost, 'statuscode': 200}
+        response_dict = {'response': response_data, 'source': source, 'session_id': session_id,
+                         'status': 'success',
+                         'token_used': token_used, 'total_cost': total_cost, 'statuscode': 200}
+        # Save to Cosmos DB if response is successful
+        update_chat_history(History_container, response_dict_history, session_id, ip_address)
+        return Response(response_dict)
+
+    except json.JSONDecodeError as e:
+        return Response({"error": "Invalid JSON" + "\n e", 'status': 'Fail', 'statuscode': 400}, status=400)
+    except exceptions.CosmosHttpResponseError as e:
+        return Response({"error": str(e), 'status': 'Fail', 'statuscode': 500}, status=500)
+
+    except Exception as e:
+        return Response({"error": str(e), 'status': 'Fail', 'statuscode': 500}, status=500)
 
 
 @api_view(['POST'])
