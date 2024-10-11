@@ -90,14 +90,40 @@ def BusRouteGroup(text_content):
 def BusRouteDoc(grouped_df, row, unique_id, category, date):
     try:
         data = []
-        text_data = ''
+        all_data = ''
         url_value = ''
+        pickup_times = []
+        pickup_times_A = []
+        pickup_times_B = []
+        pickup_times_C = []
         for header, value in zip(grouped_df.columns, row):
             if header == 'URL':  # Assuming 'URL' is the column name for URLs
                 url_value = value  # Store only URL value
-            text_data += f"{header}: {value}\n"  # Append the current row's data to all_data
+            elif header == 'Pickup Point':
+                pickup_points = value
+            elif header == 'Pickup Time':
+                pickup_times = value
+            elif header == 'Pickup Time(A shift)':
+                pickup_times_A = value
+            elif header == 'Pickup Time(B shift)':
+                pickup_times_B = value
+            elif header == 'Pickup Time(C shift)':
+                pickup_times_C = value
+            else:
+                all_data += f"{header}: {value}\n"  # Append the current row's data to all_data
+        all_data += "Bus Schedule \n"
+        for i, point in enumerate(pickup_points):
+            all_data += "Pickup Point: " + point + "\n"
+            if pickup_times:
+                all_data += "Pickup Time: " + pickup_times[i] + "\n"
+            if pickup_times_A:
+                all_data += "Pickup Time A shift: " + pickup_times_A[i] + "\n"
+            if pickup_times_B:
+                all_data += "Pickup Time B shift: " + pickup_times_B[i] + "\n"
+            if pickup_times_C:
+                all_data += "Pickup Time C shift: " + pickup_times_C[i] + "\n"
         metadata = {'source': url_value, 'category': category, 'unique_id': unique_id, 'Date': date}
-        data.append(Document(page_content=text_data, metadata=metadata))
+        data.append(Document(page_content=all_data, metadata=metadata))
         return data
     except Exception as e:
         error_details = logger.log(f"Error creating document for Bus route content: {str(e)}", "Error")
